@@ -24,7 +24,7 @@ COCO_CLASSES = ['person']
 FLIPPED = True
 # ....hourglass parameter
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
-COCO_FILENAME = '/root/dataset/coco_train_181209.tfrecords'
+COCO_FILENAME = '/home/new/dataset/coco_train_181209.tfrecords'
 # ------------------------------------------------------------
 
 
