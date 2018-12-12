@@ -16,6 +16,7 @@ class Solver(object):
 
     def __init__(self, net, data):
         # self.lw = lw
+        self.train_op = cfg.TRAIN_OP
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
         self.net = net
         self.data = data
@@ -29,8 +30,12 @@ class Solver(object):
 
         self.summary_iter = cfg.COCO_SUMMARY_ITER
         self.save_iter = cfg.COCO_SAVE_ITER
-        self.output_dir = os.path.join(
-            cfg.OUTPUT_DIR, datetime.datetime.now().strftime('%Y_%m_%d_%H_%M'))
+        if cfg.OUTPUT_DIR_TASK:
+            self.output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.OUTPUT_DIR_TASK)
+        else:
+            self.output_dir = os.path.join(
+                cfg.OUTPUT_DIR, datetime.datetime.now().strftime('%Y_%m_%d_%H_%M'))
+
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -145,6 +150,7 @@ class Solver(object):
     def save_cfg(self):
 
         with open(os.path.join(self.output_dir, 'config.txt'), 'w') as f:
+            print("save cfg to", os.path.join(self.output_dir, 'config.txt'))
             cfg_dict = cfg.__dict__
             for key in sorted(cfg_dict.keys()):
                 if key[0].isupper():
@@ -164,17 +170,20 @@ class Solver(object):
                 variables_to_restore.append(var)
         return variables_to_restore
 
-    def get_trainable_variables(self, option="all"):
+    def get_trainable_variables(self):
         variables_to_train = []
-        if option == "all":
+        if self.train_op == "all":
             variables_to_train = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-        elif option == "sp" or self.add_yolo_position == "middle":
+            print("TRAIN ALL VAR")
+        elif self.train_op == "sp" and self.add_yolo_position == "middle":
+            print("TRAIN SCOPE VAR")
             for sp in self.train_scopes:
                 variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, sp)
                 variables_to_train.extend(variables)
         # TODO do not support now
         else:
-            variables_to_train = []
+            print('if add yolo to the tail of hg_net, can not load weight from YOlo_small.ckpt!')
+            raise RuntimeError('Input Error')
         # delete duplicated variables
         return list(set(variables_to_train))
 
@@ -198,8 +207,9 @@ def update_config_paths(weights_file):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
+    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
-    #parser.add_argument('--data_dir', default="data", type=str)
+    parser.add_argument('--log_dir', type=str)
     parser.add_argument('--threshold', default=0.2, type=float)
     parser.add_argument('--iou_threshold', default=0.5, type=float)
     parser.add_argument('--gpu', type=str)
@@ -209,16 +219,19 @@ def main():
     # if args.data_dir != cfg.DATA_PATH:
     #     update_config_paths(args.data_dir, args.weights)
     if args.load_weights:
-        #update_config_paths(args.data_dir, args.weights)
+        # update_config_paths(args.data_dir, args.weights)
         update_config_paths(args.weights)
+        cfg.TRAIN_OP = "sp"
+    else:
+        cfg.TRAIN_OP = "all"
     if args.gpu is not None:
         cfg.GPU = args.gpu
+    if args.log_dir:
+        cfg.OUTPUT_DIR_TASK = args.log_dir
+    cfg.ADD_YOLO_POSITION = args.position
+    print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
-    # if you want to load weights from YOLO_small.ckpt,
-    # you need to add yolo head in the middle position of the hg_net
-    if args.load_weights:
-        cfg.ADD_YOLO_POSITION = "middle"
     hg_yolo = HOURGLASSYOLONet()
     dataset = Coco('train')
 

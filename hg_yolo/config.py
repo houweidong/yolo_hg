@@ -5,7 +5,8 @@ import os
 #DATA_PATH = 'data'
 #PASCAL_PATH = os.path.join(DATA_PATH, 'pascal_voc')
 #CACHE_PATH = os.path.join(PASCAL_PATH, 'cache')
-OUTPUT_DIR = 'output'
+OUTPUT_DIR = 'log'
+OUTPUT_DIR_TASK = None
 WEIGHTS_DIR = 'weights'
 WEIGHTS_FILE = None
 CHECKPOINT_EXCLUDE_SCOPES = ['conv_pad3', 'batch_norm_relu', 'residual1', 'down_sampling', 'residual2',
@@ -30,6 +31,7 @@ COCO_FILENAME = '/root/dataset/coco_train_181209.tfrecords'
 # ------------------------------------------------------------
 # model parameter
 ADD_YOLO_POSITION = "tail"
+TRAIN_OP = "all"  # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
 IMAGE_SIZE = 256
 CELL_SIZE = 64
 BOXES_PER_CELL = 2

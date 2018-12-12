@@ -187,7 +187,7 @@ def model(input_x,
           is_training=True,
           add_yolo_position="tail"):  # add yolo position only support tail and middle
     #conv=conv2(input_x,7,[1,2,2,1])
-    cell_hight, cell_width, ch = shape
+    batch_size, cell_hight, cell_width, ch = shape
     with tf.name_scope('conv_pad3'):
         cp=pad_conv2(input_x,[[0,0],[3,3],[3,3],[0,0]],7,[1,2,2,1],3,64)
     with tf.name_scope('batch_norm_relu'):
@@ -312,7 +312,7 @@ def model(input_x,
                 yolo_output = slim.fully_connected(
                     net, cell_hight * cell_width * ch, activation_fn=None, scope='fc_36')
                 yolo_output = tf.reshape(yolo_output,
-                                         [input_x.shape[0], ch, cell_hight, cell_width],
+                                         [-1, ch, cell_hight, cell_width],
                                          name='rs_37')
                 yolo_output = tf.transpose(yolo_output, [0, 2, 3, 1], name='trans_38')
 

@@ -46,7 +46,7 @@ class HOURGLASSYOLONet(object):
             (self.boxes_per_cell, self.cell_size, self.cell_size)), (1, 2, 0))
 
         self.images = tf.placeholder(
-            tf.float32, [self.batch_size, self.image_size, self.image_size, 3],
+            tf.float32, [None, self.image_size, self.image_size, 3],
             name='images')
         self.hg_logits, self.yolo_logits = self.build_network()
 
@@ -67,7 +67,7 @@ class HOURGLASSYOLONet(object):
 
     def build_network(self):
         return model(self.images,
-                     (self.cell_size, self.cell_size, self.ch_size),
+                     (self.batch_size, self.cell_size, self.cell_size, self.ch_size),
                      self.alpha,
                      self.keep_prob,
                      self.is_training,

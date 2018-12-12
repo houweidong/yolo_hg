@@ -204,9 +204,10 @@ class Detector(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--position', default="middle", type=str, choices=["tail", "middle"])
     parser.add_argument('--weights', default="hg_yolo-5000", type=str)
     parser.add_argument('--weight_dir', default='weights', type=str)
-    parser.add_argument('--data_dir', default="data", type=str)
+    # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     args = parser.parse_args()
@@ -216,8 +217,10 @@ def main():
     if args.cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
+    cfg.ADD_YOLO_POSITION = args.position
     yolo = HOURGLASSYOLONet(False)
-    weight_file = os.path.join(args.data_dir, args.weight_dir, args.weights)
+    weight_file = os.path.join(args.weight_dir, args.weights)
+    print(weight_file)
     detector = Detector(yolo, weight_file)
 
     # detect from camera
@@ -225,7 +228,7 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    imname = 'test/person.jpg'
+    imname = 'test/0.jpg'
     detector.image_detector(imname)
 
 
