@@ -208,6 +208,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
+    parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--threshold', default=0.2, type=float)
@@ -221,7 +222,7 @@ def main():
     if args.load_weights:
         # update_config_paths(args.data_dir, args.weights)
         update_config_paths(args.weights)
-        cfg.TRAIN_OP = "sp"
+        cfg.TRAIN_OP = args.train_op
     else:
         cfg.TRAIN_OP = "all"
     if args.gpu is not None:
