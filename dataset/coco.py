@@ -1,16 +1,16 @@
 import os
-import xml.etree.ElementTree as ET
+# import xml.etree.ElementTree as ET
 import numpy as np
-import cv2
-import pickle
-import copy
+# import cv2
+# import pickle
+# import copy
 import hg_yolo.config as cfg
 import random
 import tensorflow as tf
 from dataset import gene_hm
 from dataset import processing
-from dataset.new_prepro import data_enhance, read_coco_tf
-import matplotlib.pyplot as plt
+from dataset.new_prepro import read_coco_tf
+# import matplotlib.pyplot as plt
 
 
 class Coco(object):
