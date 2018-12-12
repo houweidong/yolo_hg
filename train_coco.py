@@ -96,7 +96,7 @@ class Solver(object):
                          self.net.labels_kp: labels_kp}
 
             if step % self.summary_iter == 0:
-                if step % self.summary_iter == 0:
+                if step % (self.summary_iter * 10) == 0:
 
                     train_timer.tic()
                     summary_str, loss, hg_loss, yolo_loss, _ = self.sess.run(
