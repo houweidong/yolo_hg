@@ -9,6 +9,7 @@ slim = tf.contrib.slim
 class HOURGLASSYOLONet(object):
 
     def __init__(self, is_training=True):
+        self.loss_factor = cfg.LOSS_FACTOR
         self.is_training = is_training
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
         self.classes = cfg.COCO_CLASSES
@@ -230,7 +231,8 @@ class HOURGLASSYOLONet(object):
             iou_predict_truth = self.calc_iou(predict_boxes_tran, boxes)
 
             # calculate I tensor [BATCH_SIZE, CELL_SIZE, CELL_SIZE, BOXES_PER_CELL]
-            object_mask = tf.reduce_max(iou_predict_truth, 3, keep_dims=True)
+            #object_mask = tf.reduce_max(iou_predict_truth, 3, keep_dims=True)
+            object_mask = tf.reduce_max(iou_predict_truth, 3, keepdims=True)
             object_mask = tf.cast(
                 (iou_predict_truth >= object_mask), tf.float32) * response
 
@@ -272,14 +274,6 @@ class HOURGLASSYOLONet(object):
                 tf.reduce_sum(tf.square(boxes_delta), axis=[1, 2, 3, 4]),
                 name='coord_loss') * self.coord_scale
 
-            # tf.losses.add_loss(class_loss)
-            # tf.losses.add_loss(object_loss)
-            # tf.losses.add_loss(noobject_loss)
-            # tf.losses.add_loss(coord_loss)
-            # if self.num_class != 1:
-            #     yolo_loss = class_loss + object_loss + noobject_loss + coord_loss
-            # else:
-            #     yolo_loss = object_loss + noobject_loss + coord_loss
             yolo_loss = class_loss + object_loss + noobject_loss + coord_loss
 
             if self.num_class != 1:
@@ -287,20 +281,21 @@ class HOURGLASSYOLONet(object):
             tf.summary.scalar('object_loss', object_loss)
             tf.summary.scalar('noobject_loss', noobject_loss)
             tf.summary.scalar('coord_loss', coord_loss)
-            tf.summary.scalar('yolo_loss', yolo_loss, collections=['yolo_loss'])
+            tf.summary.scalar('yolo_loss', yolo_loss)
 
             tf.summary.histogram('boxes_delta_x', boxes_delta[..., 0])
             tf.summary.histogram('boxes_delta_y', boxes_delta[..., 1])
             tf.summary.histogram('boxes_delta_w', boxes_delta[..., 2])
             tf.summary.histogram('boxes_delta_h', boxes_delta[..., 3])
             tf.summary.histogram('iou', iou_predict_truth)
-    #elif sign == "hourglass":
-        #with tf.variable_scope(scope):
+
             diff1 = tf.subtract(hg_logits, labels_kp)
-            hg_loss = tf.reduce_mean(tf.nn.l2_loss(diff1, name='l2loss'))
-            #tf.losses.add_loss(hg_loss)
-            #tf.summary.scalar('', hg_loss)
-            tf.summary.scalar('hg_loss', hg_loss, collections=['hg_loss'])
+            hg_loss = tf.reduce_mean(tf.nn.l2_loss(diff1, name='l2loss')) * self.loss_factor
+            # tf.losses.add_loss(hg_loss)
+            # tf.summary.scalar('', hg_loss)
+            tf.summary.scalar('hg_loss', hg_loss)
+            # loss = yolo_loss + self.loss_factor * hg_loss
             loss = yolo_loss + hg_loss
+            tf.summary.scalar('loss', loss)
         return loss, hg_loss, yolo_loss
 

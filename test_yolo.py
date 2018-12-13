@@ -204,9 +204,9 @@ class Detector(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="middle", type=str, choices=["tail", "middle"])
-    parser.add_argument('--weights', default="hg_yolo-5000", type=str)
-    parser.add_argument('--weight_dir', default='weights', type=str)
+    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
+    parser.add_argument('--weights', default="hg_yolo-100000", type=str)
+    parser.add_argument('--weight_dir', default='log/nlw_all_tail', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -228,7 +228,7 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    imname = 'test/0.jpg'
+    imname = 'test/2.jpg'
     detector.image_detector(imname)
 
 

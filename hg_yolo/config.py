@@ -24,12 +24,14 @@ COCO_CLASSES = ['person']
 FLIPPED = True
 # ....hourglass parameter
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
-COCO_FILENAME = '/home/new/dataset/coco_train_181209.tfrecords'
+#COCO_FILENAME = '/home/new/dataset/coco_train_181209.tfrecords'
+COCO_FILENAME = '/root/dataset/coco_train_181209.tfrecords'
 # ------------------------------------------------------------
 
 
 # ------------------------------------------------------------
 # model parameter
+LOSS_FACTOR = 0.01
 ADD_YOLO_POSITION = "tail"
 TRAIN_OP = "all"  # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
 IMAGE_SIZE = 256
@@ -64,9 +66,9 @@ LEARNING_RATE = 1e-4
 DECAY_STEPS = 5000
 DECAY_RATE = 0.1
 STAIRCASE = True
-MAX_ITER = 100000
+MAX_ITER = 60000
 SUMMARY_ITER = 10
-SAVE_ITER = 5000
+SAVE_ITER = 20000
 # coco parameter
 COCO_EXAMPLES = 7843
 COCO_BATCH_SIZE = 20

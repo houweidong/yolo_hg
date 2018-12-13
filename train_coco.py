@@ -195,13 +195,39 @@ class Solver(object):
 #     cfg.WEIGHTS_DIR = os.path.join(data_dir, 'weights')
 #
 #     cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, weights_file)
-def update_config_paths(weights_file):
-    #cfg.DATA_PATH = data_dir
-    #cfg.PASCAL_PATH = os.path.join(data_dir, 'pascal_voc')
-    #cfg.CACHE_PATH = os.path.join(cfg.PASCAL_PATH, 'cache')
-    #cfg.OUTPUT_DIR = 'output'
-    #cfg.WEIGHTS_DIR = 'weights'
-    cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, weights_file)
+# def update_config_paths(weights_file):
+#     #cfg.DATA_PATH = data_dir
+#     #cfg.PASCAL_PATH = os.path.join(data_dir, 'pascal_voc')
+#     #cfg.CACHE_PATH = os.path.join(cfg.PASCAL_PATH, 'cache')
+#     #cfg.OUTPUT_DIR = 'output'
+#     #cfg.WEIGHTS_DIR = 'weights'
+#     cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, weights_file)
+
+
+def update_config(args):
+    if args.gpu is not None:
+        cfg.GPU = args.gpu
+    if args.log_dir:
+        cfg.OUTPUT_DIR_TASK = args.log_dir
+
+    cfg.TRAIN_OP = args.train_op
+    cfg.ADD_YOLO_POSITION = args.position
+    if args.load_weights:
+        # update_config_paths(args.data_dir, args.weights)
+        cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, args.weights)
+        cfg.ADD_YOLO_POSITION = "middle"
+    cfg.LOSS_FACTOR = args.factor
+    cfg.OBJECT_SCALE = args.ob_f
+    cfg.NOOBJECT_SCALE = args.noob_f
+    cfg.COORD_SCALE = args.coo_f
+    cfg.CLASS_SCALE = args.cl_f
+
+    print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
+    print("LOSS_FACTOR:{}   OB_SC:{}    NOOB_SC:{}  COO_SC:{}".format(args.factor,
+                                                                      args.ob_f,
+                                                                      args.noob_f,
+                                                                      args.coo_f))
+    os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
 
 def main():
@@ -214,24 +240,35 @@ def main():
     parser.add_argument('--threshold', default=0.2, type=float)
     parser.add_argument('--iou_threshold', default=0.5, type=float)
     parser.add_argument('--gpu', type=str)
-    #parser.add_argument('--option', default=1, type=int, help='decide where the dataset from')
+    parser.add_argument('--factor', default=0.01, type=float)
+    parser.add_argument('--ob_f', default=1.0, type=float)
+    parser.add_argument('--noob_f', default=1.0, type=float)
+    parser.add_argument('--coo_f', default=5.0, type=float)
+    parser.add_argument('--cl_f', default=2.0, type=float)
+    # parser.add_argument('--option', default=1, type=int, help='decide where the dataset from')
     args = parser.parse_args()
-
     # if args.data_dir != cfg.DATA_PATH:
     #     update_config_paths(args.data_dir, args.weights)
-    if args.load_weights:
-        # update_config_paths(args.data_dir, args.weights)
-        update_config_paths(args.weights)
-        cfg.TRAIN_OP = args.train_op
-    else:
-        cfg.TRAIN_OP = "all"
-    if args.gpu is not None:
-        cfg.GPU = args.gpu
-    if args.log_dir:
-        cfg.OUTPUT_DIR_TASK = args.log_dir
-    cfg.ADD_YOLO_POSITION = args.position
-    print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
-    os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
+    # if args.load_weights:
+    #     # update_config_paths(args.data_dir, args.weights)
+    #     update_config_paths(args.weights)
+    #
+    # if args.gpu is not None:
+    #     cfg.GPU = args.gpu
+    # if args.log_dir:
+    #     cfg.OUTPUT_DIR_TASK = args.log_dir
+    #
+    # cfg.TRAIN_OP = args.train_op
+    # cfg.ADD_YOLO_POSITION = args.position
+    # cfg.LOSS_FACTOR = args.factor
+    # cfg.OBJECT_SCALE = args.ob_f
+    # cfg.NOOBJECT_SCALE = args.noob_f
+    # cfg.COORD_SCALE = args.coo_f
+    # cfg.CLASS_SCALE = args.cl_f
+    #
+    # print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
+    # os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
+    update_config(args)
 
     hg_yolo = HOURGLASSYOLONet()
     dataset = Coco('train')
