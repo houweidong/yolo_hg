@@ -201,12 +201,35 @@ class Detector(object):
         cv2.imshow('Image', image)
         cv2.waitKey(wait)
 
+    def images_detector(self, imspth, wait=0):
+        img_names = os.listdir(imspth)
+        detect_timer = Timer()
+        for name in img_names:
+            img_path = os.path.join(imspth, name)
+            try:
+                image = cv2.imread(img_path)
+            except Exception as info:
+                print(info)
+                continue
+
+            detect_timer.tic()
+            result = self.detect(image)
+            detect_timer.toc()
+
+            self.draw_result(image, result)
+            cv2.imshow('Image', image)
+
+            cv2.waitKey(wait)
+        print('Average detecting time: {:.3f}s'.format(
+            detect_timer.average_time))
+        #cv2.waitKey(wait)
+
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
+    parser.add_argument('--position', default="middle", type=str, choices=["tail", "middle"])
     parser.add_argument('--weights', default="hg_yolo-100000", type=str)
-    parser.add_argument('--weight_dir', default='log/nlw_all_tail', type=str)
+    parser.add_argument('--weight_dir', default='log/middle_10_1_10', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -228,8 +251,9 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
+    ims_pth = "test"
     imname = 'test/2.jpg'
-    detector.image_detector(imname)
+    detector.images_detector(ims_pth)
 
 
 if __name__ == '__main__':

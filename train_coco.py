@@ -56,8 +56,9 @@ class Solver(object):
         self.learning_rate = tf.train.exponential_decay(
             self.initial_learning_rate, self.global_step, self.decay_steps,
             self.decay_rate, self.staircase, name='learning_rate')
-        #self.optimizer = tf.train.GradientDescentOptimizer(
-        #     learning_rate=self.learning_rate)
+        # self.optimizer = tf.train.GradientDescentOptimizer(
+        #      learning_rate=self.learning_rate)
+        #self.optimizer = tf.train.MomentumOptimizer(self.learning_rate, 0.9)
         self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
         #self.train_op = slim.learning.create_train_op(
         #    self.net.loss, self.optimizer, global_step=self.global_step)\
@@ -227,6 +228,7 @@ def update_config(args):
                                                                       args.ob_f,
                                                                       args.noob_f,
                                                                       args.coo_f))
+    print("LR: {}".format(cfg.COCO_LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
 

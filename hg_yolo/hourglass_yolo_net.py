@@ -37,7 +37,7 @@ class HOURGLASSYOLONet(object):
         self.coord_scale = cfg.COORD_SCALE
 
         self.learning_rate = cfg.LEARNING_RATE
-        #self.batch_size = cfg.BATCH_SIZE
+        # self.batch_size = cfg.BATCH_SIZE
         self.batch_size = cfg.COCO_BATCH_SIZE
         self.keep_prob = cfg.KEEP_PROB
         self.alpha = cfg.ALPHA
@@ -283,10 +283,10 @@ class HOURGLASSYOLONet(object):
             tf.summary.scalar('coord_loss', coord_loss)
             tf.summary.scalar('yolo_loss', yolo_loss)
 
-            tf.summary.histogram('boxes_delta_x', boxes_delta[..., 0])
-            tf.summary.histogram('boxes_delta_y', boxes_delta[..., 1])
-            tf.summary.histogram('boxes_delta_w', boxes_delta[..., 2])
-            tf.summary.histogram('boxes_delta_h', boxes_delta[..., 3])
+            # tf.summary.histogram('boxes_delta_x', boxes_delta[..., 0])
+            # tf.summary.histogram('boxes_delta_y', boxes_delta[..., 1])
+            # tf.summary.histogram('boxes_delta_w', boxes_delta[..., 2])
+            # tf.summary.histogram('boxes_delta_h', boxes_delta[..., 3])
             tf.summary.histogram('iou', iou_predict_truth)
 
             diff1 = tf.subtract(hg_logits, labels_kp)
