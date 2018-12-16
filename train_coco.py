@@ -86,9 +86,9 @@ class Solver(object):
     def train(self):
         train_timer = Timer()
         load_timer = Timer()
-
-        for step in range(1, self.max_iter + 1):
-
+        step = 1
+        while True:
+        # for step in range(1, self.max_iter + 1):
             load_timer.tic()
             images, labels_det, labels_kp = self.data.get()
             load_timer.toc()
@@ -145,6 +145,7 @@ class Solver(object):
                     self.output_dir))
                 self.saver.save(
                     self.sess, self.ckpt_file, global_step=self.global_step)
+            step += 1
         self.coord.request_stop()
         self.coord.join(self.threads)
 

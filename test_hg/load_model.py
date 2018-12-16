@@ -3,16 +3,19 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import os
+from hg_yolo import config as cfg
+nPoints = cfg.COCO_NPOINTS
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 #加载模型，进行预测
 #path=r'E:\论文\投稿论文\图片'#预测图片文件夹
 path = '../test'
 result_path = '../xiaolunwen'
+
 if not os.path.exists(result_path):
     os.makedirs(result_path)
 result=open('../xiaolunwen/result_diff.txt','w+')
 with tf.Session() as sess:
-    cp_path = '../log/tail_10_1_10'
+    cp_path = '../log/10_1_30'
     ckpt = tf.train.get_checkpoint_state(cp_path)  # 通过检查文件锁定最新模型,时间
     if ckpt and ckpt.model_checkpoint_path:#ckpt.model_checkpoint_path最新的模型
         print(ckpt.model_checkpoint_path)
@@ -49,7 +52,7 @@ with tf.Session() as sess:
             # result.write(str(or_width)+' '+str(or_height)+' ')
             (width,height)=test[0][0].shape
             print(width,height)
-            for i in range(16):
+            for i in range(nPoints):
                 position=np.argmax(test[0][i])
                 y,x=divmod(position,width)
                 result.write(str(x*or_width/width)+' ')

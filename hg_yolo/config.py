@@ -52,7 +52,7 @@ HEIGHT = 512
 HM_HEIGHT = 64
 HM_WIDTH = 64
 WHAT_FACK = 10
-NPOINTS = 16
+#NPOINTS = 16
 COCO_NPOINTS = 17
 HG_CELL_SIZE = 64
 # ------------------------------------------------------------
@@ -95,6 +95,6 @@ STAIRCASE_HG = True
 
 # ------------------------------------------------------------
 # test parameter
-THRESHOLD = 0.02
+THRESHOLD = 0.3
 IOU_THRESHOLD = 0.5
 # ------------------------------------------------------------

@@ -227,9 +227,9 @@ class Detector(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="middle", type=str, choices=["tail", "middle"])
-    parser.add_argument('--weights', default="hg_yolo-100000", type=str)
-    parser.add_argument('--weight_dir', default='log/middle_10_1_10', type=str)
+    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
+    parser.add_argument('--weights', default="hg_yolo-210000", type=str)
+    parser.add_argument('--weight_dir', default='log/10_1_30', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
