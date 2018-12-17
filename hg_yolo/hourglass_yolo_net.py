@@ -9,6 +9,7 @@ slim = tf.contrib.slim
 class HOURGLASSYOLONet(object):
 
     def __init__(self, is_training=True):
+        # self.lf_tsp = cfg.LOOK_FEATURES_TRANSPOSE
         self.loss_factor = cfg.LOSS_FACTOR
         self.is_training = is_training
         self.add_yolo_position = cfg.ADD_YOLO_POSITION

@@ -63,7 +63,7 @@ class Solver(object):
         #self.train_op = slim.learning.create_train_op(
         #    self.net.loss, self.optimizer, global_step=self.global_step)\
         self.train_op = self.optimizer.minimize(self.net.loss,
-                                                self.global_step,
+                                                 self.global_step,
                                                 self.get_trainable_variables())
 
         gpu_options = tf.GPUOptions()
@@ -236,7 +236,10 @@ def update_config(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
-    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
+    parser.add_argument('--position',
+                        default="tail",
+                        type=str,
+                        choices=["tail", "middle", "tail_tsp", "tail_conv", "tail_tsp_self"])
     parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)

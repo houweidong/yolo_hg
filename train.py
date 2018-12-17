@@ -58,7 +58,7 @@ class Solver(object):
         self.learning_rate_hg = tf.train.exponential_decay(
             self.initial_learning_rate_hg, self.global_step, self.decay_steps_hg,
             self.decay_rate_hg, self.staircase_hg, name='learning_rate_hg')
-        #self.optimizer_hg = tf.train.GradientDescentOptimizer(
+        # self.optimizer_hg = tf.train.GradientDescentOptimizer(
         #    learning_rate=self.learning_rate_hg)
         self.optimizer_hg = tf.train.RMSPropOptimizer(self.learning_rate_hg)
 

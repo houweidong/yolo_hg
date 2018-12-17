@@ -32,7 +32,8 @@ COCO_FILENAME = '/root/dataset/coco_train_181209.tfrecords'
 # ------------------------------------------------------------
 # model parameter
 LOSS_FACTOR = 0.01
-ADD_YOLO_POSITION = "tail"
+ADD_YOLO_POSITION = "tail"  # support middle | tail | tail_cov | tail_tsp | tail_tsp_self
+LOOK_FEATURES_TRANSPOSE = True
 TRAIN_OP = "all"  # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
 IMAGE_SIZE = 256
 CELL_SIZE = 64

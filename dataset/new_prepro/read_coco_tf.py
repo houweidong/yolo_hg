@@ -1,23 +1,25 @@
 import tensorflow as tf
 from dataset.new_prepro import data_enhance
-"""加载一个batchsize的image"""
-WIDTH=256
-HEIGHT=256
-HM_HEIGHT=64
-HM_WIDTH=64
-def _read_single_sample(samples_dir):
 
-    filename_quene=tf.train.string_input_producer([samples_dir])
-    reader=tf.TFRecordReader()
-    _,serialize_example=reader.read(filename_quene)
-    features=tf.parse_single_example(
+"""加载一个batchsize的image"""
+WIDTH = 256
+HEIGHT = 256
+HM_HEIGHT = 64
+HM_WIDTH = 64
+
+
+def _read_single_sample(samples_dir):
+    filename_quene = tf.train.string_input_producer([samples_dir])
+    reader = tf.TFRecordReader()
+    _, serialize_example = reader.read(filename_quene)
+    features = tf.parse_single_example(
         serialize_example,
         features={
-                    'image/height':tf.FixedLenFeature([], tf.int64),
-                    'image/width':tf.FixedLenFeature([], tf.int64),
-                    'image/encoded':tf.FixedLenFeature([],tf.string),
-                    'image/object/bboxes':tf.FixedLenFeature([8], tf.float32),
-                    'image/object/keypoints':tf.FixedLenFeature([102],tf.int64)
+            'image/height': tf.FixedLenFeature([], tf.int64),
+            'image/width': tf.FixedLenFeature([], tf.int64),
+            'image/encoded': tf.FixedLenFeature([], tf.string),
+            'image/object/bboxes': tf.FixedLenFeature([8], tf.float32),
+            'image/object/keypoints': tf.FixedLenFeature([102], tf.int64)
 
         }
     )
@@ -26,45 +28,47 @@ def _read_single_sample(samples_dir):
     image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
     image = tf.reshape(image, [height, width, 3])  # ！reshape 先列后行
     xxyy = tf.cast(features['image/object/bboxes'], tf.float32)
-    keypoints=tf.cast(features['image/object/keypoints'], tf.int32)
+    keypoints = tf.cast(features['image/object/keypoints'], tf.int32)
 
-    return image,keypoints,width,height,xxyy
+    return image, keypoints, width, height, xxyy
     # print(img.shape)
     # print(label)
 
-def resize_img_label(image,label,width,height,gt_bbox):
-    new_img=tf.image.resize_images(image,[256,256],method=1)
-    x=tf.reshape(label[:,0]*256./tf.cast(width,tf.float32),(-1,1))
-    y=tf.reshape(label[:,1]*256./tf.cast(height,tf.float32),(-1,1))
-    re_label=tf.concat([x,y],axis=1)
-    gt_bbox=tf.cast(gt_bbox,tf.float32)
+
+def resize_img_label(image, label, width, height, gt_bbox):
+    new_img = tf.image.resize_images(image, [256, 256], method=1)
+    x = tf.reshape(label[:, 0] * 256. / tf.cast(width, tf.float32), (-1, 1))
+    y = tf.reshape(label[:, 1] * 256. / tf.cast(height, tf.float32), (-1, 1))
+    re_label = tf.concat([x, y], axis=1)
+    gt_bbox = tf.cast(gt_bbox, tf.float32)
     b_x = tf.reshape(gt_bbox[:, 0] * 256. / tf.cast(width, tf.float32), (-1, 1))
     b_y = tf.reshape(gt_bbox[:, 1] * 256. / tf.cast(height, tf.float32), (-1, 1))
     re_bbox = tf.concat([b_x, b_y], axis=1)
-    return new_img,re_label,re_bbox
+    return new_img, re_label, re_bbox
 
 
-def batch_samples(batch_size,filename,shuffle=False):
+def batch_samples(batch_size, filename, shuffle=False):
     """
     filename:tfrecord文件名
     """
 
-    image,label,width,height,bbox=_read_single_sample(filename)
+    image, label, width, height, bbox = _read_single_sample(filename)
 
     label = tf.cast(tf.reshape(label, [-1, 3]), tf.float32)
     bbox = tf.cast(tf.reshape(bbox, [-1, 2]), tf.int64)
-    [image,label,bbox],new_width,new_height=data_enhance.do_enhance(image,label,width,height,True,bbox)
-    image, label, bbox=resize_img_label(image,label,new_width,new_height,bbox)
+    [image, label, bbox], new_width, new_height = data_enhance.do_enhance(image, label, width, height, True, bbox)
+    image, label, bbox = resize_img_label(image, label, new_width, new_height, bbox)
 
     bbox = tf.cast(tf.reshape(bbox, (-1, 2)), tf.int64)
 
     if shuffle:
-        b_image,b_label,b_bbox = tf.train.shuffle_batch([image,label,bbox], batch_size, min_after_dequeue=batch_size*5,num_threads=2,capacity=batch_size*300)
+        b_image, b_label, b_bbox = tf.train.shuffle_batch([image, label, bbox], batch_size,
+                                                          min_after_dequeue=batch_size * 5, num_threads=2,
+                                                          capacity=batch_size * 300)
     else:
-        b_image, b_label,b_bbox=tf.train.batch([image,label,bbox],batch_size, num_threads=2)
+        b_image, b_label, b_bbox = tf.train.batch([image, label, bbox], batch_size, num_threads=2)
 
-    return b_image,b_bbox, b_label
-
+    return b_image, b_bbox, b_label
 
 
 # # # """测试加载图像"""
