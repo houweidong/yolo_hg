@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import random
+from utils import config as cfg
 
 
 def _gen_full_boundingBox(label, width, height):
@@ -115,19 +115,20 @@ def mirror_img(img, label, img_width, has_box=False, new_gt_bbox=None):
     new_x = []
     new_y = []
     # print(label,x,y)
-    for n in range(34):
-        i = n % 17
+    for n in range(cfg.COCO_MAX_PERSON_PER_PIC * cfg.COCO_NPOINTS):
+        i = n % cfg.COCO_NPOINTS
+        j = n // cfg.COCO_NPOINTS
         if i == 0:
-            l_x = x[i, 0]
-            l_y = y[i, 0]
+            l_x = x[i + j * cfg.COCO_NPOINTS, 0]
+            l_y = y[i + j * cfg.COCO_NPOINTS, 0]
         else:
             if i % 2 == 0:
-                l_x = x[i - 1, 0]
-                l_y = y[i - 1, 0]
+                l_x = x[i + j * cfg.COCO_NPOINTS - 1, 0]
+                l_y = y[i + j * cfg.COCO_NPOINTS - 1, 0]
 
             else:
-                l_x = x[i + 1][0]
-                l_y = y[i + 1, 0]
+                l_x = x[i + j * cfg.COCO_NPOINTS + 1, 0]
+                l_y = y[i + j * cfg.COCO_NPOINTS + 1, 0]
 
         new_x.append(tf.reshape(l_x, (-1, 1)))
         new_y.append(tf.reshape(l_y, (-1, 1)))
@@ -137,7 +138,7 @@ def mirror_img(img, label, img_width, has_box=False, new_gt_bbox=None):
     if has_box:
         new_gt_bbox = _mirror_gt_bbox(new_gt_bbox, re_width)
     else:
-        new_gt_bbox = np.zeros([2, 2], dtype=np.int64)
+        new_gt_bbox = np.zeros([cfg.COCO_MAX_PERSON_PER_PIC, 2], dtype=np.int64)
     return flip_img, flip_label, new_gt_bbox
 
 
@@ -147,22 +148,26 @@ def _mirror_gt_bbox(gt_bbox, img_width):
     y = tf.reshape(gt_bbox[:, 1], (-1, 1))
     new_x = []
 
-    for i in range(4):
-        if i < 2:
-            l_x = x[(i + 1) % 2, 0]
+    for i in range(cfg.COCO_MAX_PERSON_PER_PIC * 2):
+        # if i < 2:
+        #     l_x = x[(i + 1) % 2, 0]
+        # else:
+        #     l_x = x[(i + 1) % 2 + 2, 0]
+        if i % 2 == 0:
+            l_x = x[i + 1, 0]
         else:
-            l_x = x[(i + 1) % 2 + 2, 0]
+            l_x = x[i - 1, 0]
         new_x.append(tf.reshape(l_x, (-1, 1)))
     t_new_x = tf.concat(new_x, axis=0)
     flip_bbox = tf.concat([t_new_x, y], axis=1)
     return flip_bbox
 
 
-def do_not_mirror(adj_image, re_label, has_bbox, gt_bbox):
+def do_not_mirror(adj_image, re_label, has_bbox=False, gt_bbox=None):
     if has_bbox:
         bbox = gt_bbox
     else:
-        bbox = np.zeros([2, 2], dtype=np.int64)
+        bbox = np.zeros([cfg.COCO_MAX_PERSON_PER_PIC * 2, 2], dtype=np.int64)
     return adj_image, re_label, bbox
 
 
@@ -192,5 +197,5 @@ def do_enhance(image, label, width, height, has_box=False, gt_bbox=None):
     else:
         mirror_result = tf.cond(mirror_cond,
                                 lambda: mirror_img(adj_image, re_label, re_width),
-                                lambda: do_not_mirror(adj_image, re_label, has_box, new_gt_bbox))
+                                lambda: do_not_mirror(adj_image, re_label))
         return mirror_result, re_width, re_height

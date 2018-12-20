@@ -3,9 +3,9 @@ import cv2
 import argparse
 import numpy as np
 import tensorflow as tf
-import hg_yolo.config as cfg
-from hg_yolo.hourglass_yolo_net import HOURGLASSYOLONet
-from dataset.timer import Timer
+from utils import config as cfg
+from model.hourglass_yolo_net import HOURGLASSYOLONet
+from utils.timer import Timer
 
 
 class Detector(object):
@@ -128,7 +128,7 @@ class Detector(object):
         probs_filtered = probs[filter_mat_probs]
         # [2, 3, 0, 20, ...]
         classes_num_filtered = np.argmax(
-            filter_mat_probs, axis=3)[
+            probs, axis=3)[
             filter_mat_boxes[0], filter_mat_boxes[1], filter_mat_boxes[2]]
 
         # [2, 1, 0, ...]
@@ -137,6 +137,7 @@ class Detector(object):
         probs_filtered = probs_filtered[argsort]
         classes_num_filtered = classes_num_filtered[argsort]
 
+        # NMS
         for i in range(len(boxes_filtered)):
             if probs_filtered[i] == 0:
                 continue
@@ -144,6 +145,7 @@ class Detector(object):
                 if self.iou(boxes_filtered[i], boxes_filtered[j]) > self.iou_threshold:
                     probs_filtered[j] = 0.0
 
+        # select bbox whose probs is not 0
         filter_iou = np.array(probs_filtered > 0.0, dtype='bool')
         boxes_filtered = boxes_filtered[filter_iou]
         probs_filtered = probs_filtered[filter_iou]
@@ -152,7 +154,7 @@ class Detector(object):
         result = []
         for i in range(len(boxes_filtered)):
             result.append(
-                [self.net.classes[classes_num_filtered[i]],
+                [cfg.COCO_CLASSES[classes_num_filtered[i]],
                  boxes_filtered[i][0],
                  boxes_filtered[i][1],
                  boxes_filtered[i][2],
@@ -228,8 +230,8 @@ class Detector(object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
-    parser.add_argument('--weights', default="hg_yolo-210000", type=str)
-    parser.add_argument('--weight_dir', default='log/10_1_30', type=str)
+    parser.add_argument('--weights', default="hg_yolo-400000", type=str)
+    parser.add_argument('--weight_dir', default='log/20_1_100_5e-4', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -241,7 +243,7 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     cfg.ADD_YOLO_POSITION = args.position
-    yolo = HOURGLASSYOLONet(False)
+    yolo = HOURGLASSYOLONet()
     weight_file = os.path.join(args.weight_dir, args.weights)
     print(weight_file)
     detector = Detector(yolo, weight_file)
@@ -251,8 +253,8 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    ims_pth = "test"
-    imname = 'test/2.jpg'
+    ims_pth = "pictures"
+    imname = 'pictures/2.jpg'
     detector.images_detector(ims_pth)
 
 

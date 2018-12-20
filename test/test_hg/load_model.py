@@ -1,14 +1,14 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import os
-from hg_yolo import config as cfg
+from utils import config as cfg
+
 nPoints = cfg.COCO_NPOINTS
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 #加载模型，进行预测
 #path=r'E:\论文\投稿论文\图片'#预测图片文件夹
-path = '../test'
+path = '../pictures'
 result_path = '../xiaolunwen'
 
 if not os.path.exists(result_path):

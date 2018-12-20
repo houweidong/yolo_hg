@@ -21,11 +21,11 @@ CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
            'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
            'train', 'tvmonitor']
 COCO_CLASSES = ['person']
-FLIPPED = True
+
 # ....hourglass parameter
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
-#COCO_FILENAME = '/home/new/dataset/coco_train_181209.tfrecords'
-COCO_FILENAME = '/root/dataset/coco_train_181209.tfrecords'
+COCO_TRAIN_FILENAME = '/root/dataset/tfrecord/train/'
+COCO_VAL_FILENAME = '/root/dataset/tfrecord/val/'
 # ------------------------------------------------------------
 
 
@@ -71,9 +71,14 @@ MAX_ITER = 60000
 SUMMARY_ITER = 10
 SAVE_ITER = 20000
 # coco parameter
+COCO_MAX_PERSON_PER_PIC = 13
 COCO_EXAMPLES = 7843
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
+
+COCO_VAL_EXAMPLES = 2000
+COCO_VAL_EPOCH_SIZE = COCO_VAL_EXAMPLES // COCO_BATCH_SIZE
+
 COCO_LEARNING_RATE = 1e-4
 COCO_DECAY_STEPS = 10000
 COCO_DECAY_RATE = 1

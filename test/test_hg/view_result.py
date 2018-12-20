@@ -6,9 +6,9 @@
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-import os
 
-from dataset import gene_hm
+from dataset.utils import gene_hm
+
 
 def tiny_adjust(label):
     """
@@ -62,7 +62,7 @@ with open('../xiaolunwen/result_diff.txt') as f:
         # img_name=list_result[0].split('/')[-1]
         #img_name=list_result[0].split('\\')[-1]
         img_path = list_result[0]
-        #imgPath=os.path.join('../test',img_name)
+        #imgPath=os.path.join('../pictures',img_name)
         #print(list_result[1].split(' '))
         label=np.asarray([float(x) for x in list_result[1:-1]]).reshape(-1,3)
 
