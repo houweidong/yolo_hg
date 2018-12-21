@@ -5,7 +5,7 @@ import tensorflow as tf
 from utils import config as cfg
 import json
 
-
+# https://github.com/rbgirshick/py-faster-rcnn/blob/master/lib/datasets/voc_eval.py
 class COCO_VAL(object):
 
     def __init__(self):
