@@ -103,4 +103,6 @@ STAIRCASE_HG = True
 # test parameter
 THRESHOLD = 0.3
 IOU_THRESHOLD = 0.5
+COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/person_keypoints_val2017.json'
+COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
 # ------------------------------------------------------------

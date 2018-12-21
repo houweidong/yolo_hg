@@ -9,7 +9,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ''
 #加载模型，进行预测
 #path=r'E:\论文\投稿论文\图片'#预测图片文件夹
 path = '../pictures'
-result_path = '../xiaolunwen'
+result_path = './xiaolunwen'
 
 if not os.path.exists(result_path):
     os.makedirs(result_path)
