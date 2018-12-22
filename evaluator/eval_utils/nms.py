@@ -5,7 +5,7 @@ import utils.config as cfg
 def py_cpu_nms(dets):
     """Pure Python NMS baseline."""
     # x1、y1、x2、y2、以及score赋值
-    thresh = cfg.IOU_THRESHOLD
+    thresh = cfg.IOU_THRESHOLD_NMS
     x1 = dets[:, 0] - (dets[:, 2] / 2)
     y1 = dets[:, 1] - (dets[:, 3] / 2)
     x2 = dets[:, 0] + (dets[:, 2] / 2)

@@ -40,7 +40,7 @@ def iou2gt(pred, gt):
 
     inter = np.maximum(0, tb) * np.maximum(0, lr)
     iou = inter / (boxes_repeat[:, 2] * boxes_repeat[:, 3] + boxes_tile_gt[:, 2] * boxes_tile_gt[:, 3] - inter)
-    mn = (iou > cfg.IOU_THRESHOLD).astype(np.int)
+    mn = (iou > cfg.IOU_THRESHOLD_GT).astype(np.int)
     indicator_bbox = np.max(np.reshape(mn,
                                        [boxes_filtered.shape[0],
                                         boxes_filtered_gt.shape[0]]),
@@ -54,7 +54,7 @@ def iou2gt(pred, gt):
 def py_cpu_nms(dets):
     """Pure Python NMS baseline."""
     # x1、y1、x2、y2、以及score赋值
-    thresh = cfg.IOU_THRESHOLD
+    thresh = cfg.IOU_THRESHOLD_NMS
     x1 = dets[:, 0] - (dets[:, 2] / 2)
     y1 = dets[:, 1] - (dets[:, 3] / 2)
     x2 = dets[:, 0] + (dets[:, 2] / 2)

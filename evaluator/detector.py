@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from utils import config as cfg
-from evaluator.utils.nms import py_cpu_nms
+from evaluator.eval_utils.nms import py_cpu_nms
 
 
 class Detector(object):
@@ -9,8 +9,6 @@ class Detector(object):
     def __init__(self, net, weight_file):
         self.net = net
         self.weights_file = weight_file
-        self.threshold = cfg.THRESHOLD
-        self.iou_threshold = cfg.IOU_THRESHOLD
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 

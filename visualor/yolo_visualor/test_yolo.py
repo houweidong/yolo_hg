@@ -19,7 +19,7 @@ class Detector(object):
         # self.cell_size = cfg.CELL_SIZE
         # self.boxes_per_cell = cfg.BOXES_PER_CELL
         self.threshold = cfg.THRESHOLD
-        self.iou_threshold = cfg.IOU_THRESHOLD
+        self.iou_threshold = cfg.IOU_THRESHOLD_NMS
         # self.boundary1 = self.cell_size * self.cell_size * self.num_class
         # self.boundary2 = self.boundary1 +\
         #     self.cell_size * self.cell_size * self.boxes_per_cell
@@ -217,6 +217,8 @@ class Detector(object):
             detect_timer.tic()
             result = self.detect(image)
             detect_timer.toc()
+            if len(result) == 0:
+                continue
 
             self.draw_result(image, result)
             cv2.imshow('Image', image)
@@ -230,8 +232,8 @@ class Detector(object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
-    parser.add_argument('--weights', default="hg_yolo-400000", type=str)
-    parser.add_argument('--weight_dir', default='log/20_1_100_5e-4', type=str)
+    parser.add_argument('--weights', default="hg_yolo-600000", type=str)
+    parser.add_argument('--weight_dir', default='../../log/20_1_100_5e-4', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -253,7 +255,8 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    ims_pth = "pictures"
+    ims_pth = "/root/dataset/val2017"
+    #ims_pth = "../pictures/"
     imname = 'pictures/2.jpg'
     detector.images_detector(ims_pth)
 

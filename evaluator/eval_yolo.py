@@ -5,6 +5,8 @@ from utils import config as cfg
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from evaluator.coco_val import COCO_VAL
 from evaluator.detector import Detector
+import cv2
+from evaluator.eval_utils.draw_result import draw_result
 
 
 class EVALUATOR(object):
@@ -12,13 +14,99 @@ class EVALUATOR(object):
     def __init__(self, detector, data):
         self.detector = detector
         self.data = data
-        self.precision, self.recall = self.prepare_pr()
+        self.gt = self.data.gt
+        self.image_ids, self.bboxes, \
+            self.prob, self.annotations = self.prepare()
+        self.precision, self.recall = self.pr_curve()
 
-    def prepare_pr(self):
-        precision = []
-        recall = []
+    def prepare(self):
+        image_ids, bboxes, prob = [], [], []
+        annotations = {}
+        img_batch, bbox_batch = self.data.get_batch()
+        i = 1
+        while img_batch:
+            print("{:<5}th batch".format(i))
+            i += 1
+            results = self.detector.detect_batch(img_batch)
+            for ii in range(len(results)):
+                boxes_filtered, probs_filtered, _ = results[ii]
 
-        return precision, recall
+
+
+                # bbox_gt = bbox_batch[ii]['bbox_det']['bboxes']
+                # filter_mat_probs = np.array(probs_filtered >= cfg.THRESHOLD, dtype='bool')
+                # filter_mat_probs = np.nonzero(filter_mat_probs)
+                # boxes_ft_prob = boxes_filtered[filter_mat_probs]
+                # probs_ft_prob = probs_filtered[filter_mat_probs]
+                # image = img_batch[ii]
+                # draw_result(image, bbox_gt, (0, 0, 255))
+                # draw_result(image, boxes_ft_prob, (255, 0, 0))
+                # cv2.imshow('Image', image)
+                # cv2.waitKey(0)
+
+
+
+
+
+                image_ids.extend([bbox_batch[ii]['id']] * len(boxes_filtered))
+                bboxes.extend(boxes_filtered)
+                prob.extend(probs_filtered)
+                if bbox_batch[ii]['id'] not in annotations:
+                    annotations[bbox_batch[ii]['id']] = bbox_batch[ii]['bbox_det']
+            img_batch, bbox_batch = self.data.get_batch()
+        sorted_ind = np.argsort(prob)[::-1]
+        sorted_prob = np.sort(prob)[::-1]
+        BB = np.array(bboxes)
+        BB = BB[sorted_ind, :]
+        image_ids = [image_ids[x] for x in sorted_ind]
+        return image_ids, BB, sorted_prob, annotations
+
+    def pr_curve(self):
+        nd = len(self.image_ids)
+        tp = np.zeros(nd)
+        fp = np.zeros(nd)
+        for d in range(nd):
+            R = self.annotations[self.image_ids[d]]
+            bb = self.bboxes[d, :].astype(float)
+            ovmax = -np.inf
+            BBGT = R['bboxes'].astype(float)
+
+            if BBGT.size > 0:
+                # compute overlaps
+                # intersection
+                ixmin = np.maximum(BBGT[:, 0] - BBGT[:, 2] / 2, bb[0] - bb[2] / 2)
+                iymin = np.maximum(BBGT[:, 1] - BBGT[:, 3] / 2, bb[1] - bb[3] / 2)
+                ixmax = np.minimum(BBGT[:, 0] + BBGT[:, 2] / 2, bb[0] + bb[2] / 2)
+                iymax = np.minimum(BBGT[:, 1] + BBGT[:, 3] / 2, bb[1] + bb[3] / 2)
+                iw = np.maximum(ixmax - ixmin + 1., 0.)
+                ih = np.maximum(iymax - iymin + 1., 0.)
+                inters = iw * ih
+
+                # union
+                uni = bb[2] * bb[3] + BBGT[:, 2] * BBGT[:, 3] - inters
+
+                overlaps = inters / uni
+                ovmax = np.max(overlaps)
+                jmax = np.argmax(overlaps)
+
+                if ovmax > cfg.IOU_THRESHOLD_GT:
+                    if not R['det'][jmax]:
+                        tp[d] = 1.
+                        R['det'][jmax] = 1
+                    else:
+                        fp[d] = 1.
+                else:
+                    fp[d] = 1.
+
+        # compute precision recall
+        fp = np.cumsum(fp)
+        tp = np.cumsum(tp)
+        rec = tp / float(self.gt)
+        # avoid divide by zero in case the first detection matches a difficult
+        # ground truth
+
+        prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
+        return prec, rec
 
     def eval(self, use_07_metric=False):
         """ ap = eval(rec, prec, [use_07_metric])
@@ -62,8 +150,8 @@ def main():
                         default="tail",
                         type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self"])
-    parser.add_argument('--weights', default="hg_yolo-400000", type=str)
-    parser.add_argument('--weight_dir', default='log/20_1_100_5e-4', type=str)
+    parser.add_argument('--weights', default="hg_yolo-600000", type=str)
+    parser.add_argument('--weight_dir', default='../log/20_1_100_5e-4', type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     args = parser.parse_args()
@@ -79,7 +167,7 @@ def main():
 
     data = COCO_VAL()
     evaluator = EVALUATOR(detector, data)
-    evaluator.eval()
+    print(evaluator.eval())
 
 
 if __name__ == '__main__':

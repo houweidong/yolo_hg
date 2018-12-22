@@ -4,8 +4,9 @@ import numpy as np
 import tensorflow as tf
 from utils import config as cfg
 import json
+from evaluator.eval_utils.draw_result import draw_result
 
-# https://github.com/rbgirshick/py-faster-rcnn/blob/master/lib/datasets/voc_eval.py
+
 class COCO_VAL(object):
 
     def __init__(self):
@@ -15,7 +16,7 @@ class COCO_VAL(object):
         self.batch_size = cfg.COCO_BATCH_SIZE
         self.image_size = cfg.IMAGE_SIZE
         self.cursor = 0
-        self.image_mat, self.bbox_mat = self.prepare_data()
+        self.image_mat, self.bbox_mat, self.gt = self.prepare_data()
 
     def get_batch(self):
         if self.cursor <= self.annotations_size - self.batch_size:
@@ -39,7 +40,7 @@ class COCO_VAL(object):
 
             annotations_index = {}
             if 'annotations' in groundtruth_data:
-                tf.logging.info(
+                print(
                     'Found {:<5} groundtruth annotations. Building annotations index.'
                     .format(len(groundtruth_data['annotations'])))
                 for annotation in groundtruth_data['annotations']:
@@ -54,7 +55,11 @@ class COCO_VAL(object):
         missing_annotation_count = 0
         num_annotations_skipped = 0
         num_anno_error = 0  # annotation has no bbox
+        num_iscrowd = 0
+        gt = 0
         for image in images:
+            # if gt > 800:
+            #     break
             image_id = image['id']
             if image_id not in annotations_index:
                 missing_annotation_count += 1
@@ -64,8 +69,12 @@ class COCO_VAL(object):
             annotations_list = annotations_index[image_id]
             image_height = image['height']
             image_width = image['width']
+
             bboxes = []
             for object_annotations in annotations_list:
+                if object_annotations['iscrowd'] == 1:
+                    num_iscrowd += 1
+                    continue
                 (x, y, width, height) = tuple(object_annotations['bbox'])
                 if width <= 0 or height <= 0:
                     num_annotations_skipped += 1
@@ -73,12 +82,23 @@ class COCO_VAL(object):
                 if x + width > image_width or y + height > image_height:
                     num_annotations_skipped += 1
                     continue
-                bboxes.append(object_annotations['bbox'])
+                w = float(width) / image_width * self.image_size
+                h = float(height) / image_height * self.image_size
+                x = float(x) / image_width * self.image_size + w / 2
+                y = float(y) / image_height * self.image_size + h / 2
+                bboxes.append([x, y, w, h])
+                gt += 1
 
             if len(bboxes) == 0:
                 num_anno_error += 1
                 continue
-            bbox_mat.append(bboxes)
+
+            # bbox_id: {'id': image_id,
+            #           'bbox_det': {'bboxes': [[x, y, w, h],...],
+            #                        'det': [False,...]}}
+            bboxes_det = dict(bboxes=np.array(bboxes), det=[False] * len(bboxes))
+            bbox_id = dict(id=image_id, bbox_det=bboxes_det)
+            bbox_mat.append(bbox_id)
             self.annotations_size += 1
 
             # read picture
@@ -87,13 +107,20 @@ class COCO_VAL(object):
             img = cv2.imread(full_path)
             inputs = cv2.resize(img, (self.image_size, self.image_size))
             inputs = cv2.cvtColor(inputs, cv2.COLOR_BGR2RGB).astype(np.float32)
+
+            # inputs = inputs.astype(np.float32)
+            # myimg = (inputs / 255.0)
+            # draw_result(myimg, np.array(bboxes), (0, 0, 255))
+            # # draw_result(image, boxes_ft_prob, (255, 0, 0))
+            # cv2.imshow('Image', myimg)
+            # cv2.waitKey(0)
+
             inputs = (inputs / 255.0) * 2.0 - 1.0
             inputs = np.reshape(inputs, (self.image_size, self.image_size, 3))
             image_mat.append(inputs)
 
-        tf.logging.info('%d images are missing annotations.',
-                        missing_annotation_count)
-        tf.logging.info('%d annotations has no bbox.',
-                        num_anno_error)
+        print('{} images are missing annotations.'.format(missing_annotation_count))
+        print('{} annotations has no bbox.'.format(num_anno_error))
+        print('{} annotations are crowd.'.format(num_iscrowd))
 
-        return image_mat, bbox_mat
+        return image_mat, bbox_mat, gt
