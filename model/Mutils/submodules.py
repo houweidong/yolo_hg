@@ -165,6 +165,14 @@ def leaky_relu(alpha):
     return op
 
 
+def global_average_pooling(input):
+    gap = tf.nn.avg_pool(input,
+                         [1, input.shape[1], input.shape[2], 1],
+                         [1, input.shape[1], input.shape[2], 1],
+                         'VALID')
+    return tf.reshape(gap, [gap.shape[0], -1])
+
+
 def tail(r_lin, nFeats, ch, cell_size):
     return conv2(r_lin,
                  1,
@@ -183,8 +191,8 @@ def tail_tsp(r_lin, nFeats, ch, cell_size):
     ct_conv = tf.concat([x_conv, y_conv, c_conv], axis=3)
     conv_down = conv2(ct_conv, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
     return conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
-    
-    
+
+
 def tail_tsp_self(r_lin, nFeats, ch, cell_size):
     r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
     r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
