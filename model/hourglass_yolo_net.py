@@ -1,9 +1,7 @@
 import numpy as np
-import tensorflow as tf
 from utils import config as cfg
-from model.resnet_model import model
-
-slim = tf.contrib.slim
+from model.Mutils.submodules import *
+from model.Mutils import submodules
 
 
 class HOURGLASSYOLONet(object):
@@ -11,6 +9,9 @@ class HOURGLASSYOLONet(object):
     def __init__(self):
         self.loss_factor = cfg.LOSS_FACTOR
         self.is_training = True
+        self.nMoudel = cfg.NUM_MOUDEL  # hourglass 中residual 模块的数量
+        self.nStack = cfg.NUM_STACK  # hourglass 堆叠的层数
+        self.nFeats = cfg.NUM_FEATS  # hourglass 中特征图的数量
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
         self.num_class = len(cfg.COCO_CLASSES)
         self.image_size = cfg.IMAGE_SIZE
@@ -56,18 +57,9 @@ class HOURGLASSYOLONet(object):
                             [self.labels_det, self.labels_kp])
 
     def build_network(self):
-        # def model(input_x, is_training):
-    def model(input_x,
-              shape,
-              # alpha,
-              # keep_prob,
-              # is_training=True,
-              add_yolo_position="tail"
-              ):  # add yolo position, support middle tail tail_cov tail_tsp
         # conv=conv2(input_x,7,[1,2,2,1])
-        batch_size, cell_hight, cell_width, ch = shape
         with tf.name_scope('conv_pad3'):
-            cp = pad_conv2(input_x, [[0, 0], [3, 3], [3, 3], [0, 0]], 7, [1, 2, 2, 1], 3, 64)
+            cp = pad_conv2(self.images, [[0, 0], [3, 3], [3, 3], [0, 0]], 7, [1, 2, 2, 1], 3, 64)
         with tf.name_scope('batch_norm_relu'):
             bn = batch_norm_relu(cp)
         with tf.name_scope('residual1'):
@@ -77,68 +69,38 @@ class HOURGLASSYOLONet(object):
         with tf.name_scope('residual2'):
             r2 = bottleneck_residual(ds, [1, 1, 1, 1], 128, 128)
         with tf.name_scope('residual3'):
-            r3 = bottleneck_residual(r2, [1, 1, 1, 1], 128, nFeats)
+            r3 = bottleneck_residual(r2, [1, 1, 1, 1], 128, self.nFeats)
 
         output, yolo_output = None, None
         # hourglass 的输入
         h_input = r3
-        for n in range(nStack):
+        for n in range(self.nStack):
             with tf.name_scope('hourglass' + str(n + 1)):
-                h1 = hourglass(h_input, nFeats, 4)
+                h1 = hourglass(h_input, self.nFeats, self.nMoudel, 4)
             residual = h1
-            for i in range(nMoudel):
+            for i in range(self.nMoudel):
                 with tf.name_scope('residual' + str(i + 1)):
-                    residual = bottleneck_residual(residual, [1, 1, 1, 1], nFeats, nFeats)
+                    residual = bottleneck_residual(residual, [1, 1, 1, 1], self.nFeats, self.nFeats)
             with tf.name_scope('lin'):
-                r_lin = lin(residual, nFeats, nFeats)
+                r_lin = lin(residual, self.nFeats, self.nFeats)
 
                 # add yolo_head in the tail of hg_net
-                if n == nStack - 1:
-                    # and add_yolo_position != "middle":
-                    if add_yolo_position == "tail":
-                        yolo_output = conv2(r_lin,
-                                            1,
-                                            [1, 1, 1, 1],
-                                            nFeats,
-                                            ch)
-                    elif add_yolo_position == "tail_tsp":
-                        r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
-                        r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
-                        # print(nFeats // 2)
-                        x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], x_c, nFeats // 2)
-                        y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], y_c, nFeats // 2)
-                        c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
-                        ct_conv = tf.concat([x_conv, y_conv, c_conv], axis=3)
-                        conv_down = conv2(ct_conv, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
-                        yolo_output = conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
-                    elif add_yolo_position == "tail_tsp_self":
-                        r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
-                        r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
-                        x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], x_c, nFeats // 2)
-                        y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], y_c, nFeats // 2)
-                        c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
-                        yolo_output_x = conv2(x_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
-                        yolo_output_y = conv2(y_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
-                        yolo_output_c = conv2(c_conv, 1, [1, 1, 1, 1], nFeats, ch)
-                        yolo_output = yolo_output_x + yolo_output_y + yolo_output_c
-
-                    else:
-                        conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
-                        conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], nFeats, nFeats)
-                        conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], nFeats, nFeats * 2)
-                        conv_down = conv2(conv_3, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
-                        yolo_output = conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
-
+                if n == self.nStack - 1:
+                    yolo_output = getattr(submodules,
+                                          self.add_yolo_position)(r_lin,
+                                                                  self.nFeats,
+                                                                  self.ch_size,
+                                                                  self.cell_size)
             with tf.name_scope('conv_same'):
-                output = conv2(r_lin, 1, [1, 1, 1, 1], nFeats, nPoint, padding='VALID')  # 特征图输出
-            if n < (nStack - 1):
+                output = conv2(r_lin, 1, [1, 1, 1, 1], self.nFeats, self.nPoints, padding='VALID')  # 特征图输出
+            if n < (self.nStack - 1):
                 # print(n)
                 with tf.name_scope('next_input'):
-                    c_output = conv2(output, 1, [1, 1, 1, 1], nPoint, nFeats)  # 卷积的输出
+                    # 卷积的输出
+                    c_output = conv2(output, 1, [1, 1, 1, 1], self.nPoints, self.nFeats)
                     h_input = tf.add(h_input, tf.add(r_lin, c_output))
-
-        # output=tf.reshape(output,(-1,16,64,64),name='output')
-        output = tf.transpose(output, [0, 3, 1, 2], name='output')  # transpose和reshape结果是不一样的
+        # transpose和reshape结果是不一样的
+        output = tf.transpose(output, [0, 3, 1, 2], name='output')
 
         # if add_yolo_position == "middle":
         #     with tf.variable_scope('yolo'):
@@ -196,12 +158,6 @@ class HOURGLASSYOLONet(object):
         #
         #        tf.summary.image('output', tf.transpose(output[0:1, :, :, :], [3, 1, 2, 0]), max_outputs=16)
         return output, yolo_output
-        return model(self.images,
-                     (self.batch_size, self.cell_size, self.cell_size, self.ch_size),
-                     # self.alpha,
-                     # self.keep_prob,
-                     # self.is_training,
-                     self.add_yolo_position)
 
     def calc_iou(self, boxes1, boxes2, scope='iou'):
         """calculate ious
@@ -255,8 +211,8 @@ class HOURGLASSYOLONet(object):
             # w h: sqrt of scales(0~1) about w and h relative to pictures of 256*256
             #      for example real w h: (0.4, 0.8), so w h: (0.63, 0.89)
             predict_boxes = tf.reshape(
-                    predicts[:, :, :, self.boundary2:],
-                    [self.batch_size, self.cell_size, self.cell_size, self.boxes_per_cell, 4])
+                predicts[:, :, :, self.boundary2:],
+                [self.batch_size, self.cell_size, self.cell_size, self.boxes_per_cell, 4])
 
             # object indicator(1 represents has object, 0 no object)
             response = tf.reshape(

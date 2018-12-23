@@ -1,12 +1,13 @@
 import os
 import argparse
 import numpy as np
-from utils import config as cfg
+import utils.config as cfg
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from evaluator.coco_val import COCO_VAL
 from evaluator.detector import Detector
-import cv2
-from evaluator.eval_utils.draw_result import draw_result
+from utils.logger import Logger
+# import cv2
+# from evaluator.Eutils.draw_result import draw_result
 
 
 class EVALUATOR(object):
@@ -30,9 +31,6 @@ class EVALUATOR(object):
             results = self.detector.detect_batch(img_batch)
             for ii in range(len(results)):
                 boxes_filtered, probs_filtered, _ = results[ii]
-
-
-
                 # bbox_gt = bbox_batch[ii]['bbox_det']['bboxes']
                 # filter_mat_probs = np.array(probs_filtered >= cfg.THRESHOLD, dtype='bool')
                 # filter_mat_probs = np.nonzero(filter_mat_probs)
@@ -43,11 +41,6 @@ class EVALUATOR(object):
                 # draw_result(image, boxes_ft_prob, (255, 0, 0))
                 # cv2.imshow('Image', image)
                 # cv2.waitKey(0)
-
-
-
-
-
                 image_ids.extend([bbox_batch[ii]['id']] * len(boxes_filtered))
                 bboxes.extend(boxes_filtered)
                 prob.extend(probs_filtered)
@@ -89,14 +82,14 @@ class EVALUATOR(object):
                 ovmax = np.max(overlaps)
                 jmax = np.argmax(overlaps)
 
-                if ovmax > cfg.IOU_THRESHOLD_GT:
-                    if not R['det'][jmax]:
-                        tp[d] = 1.
-                        R['det'][jmax] = 1
-                    else:
-                        fp[d] = 1.
+            if ovmax > cfg.IOU_THRESHOLD_GT:
+                if not R['det'][jmax]:
+                    tp[d] = 1.
+                    R['det'][jmax] = 1
                 else:
                     fp[d] = 1.
+            else:
+                fp[d] = 1.
 
         # compute precision recall
         fp = np.cumsum(fp)
@@ -167,7 +160,12 @@ def main():
 
     data = COCO_VAL()
     evaluator = EVALUATOR(detector, data)
-    print(evaluator.eval())
+    ap = evaluator.eval()
+    log = Logger('eval_results.log', level='debug')
+    log.logger.info('AP: {}    Position: {}    Weights: {}'.format(
+        ap,
+        args.position,
+        args.weights))
 
 
 if __name__ == '__main__':

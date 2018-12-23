@@ -3,17 +3,9 @@ import argparse
 import datetime
 import tensorflow as tf
 from utils import config as cfg
-from utils.timer import Timer
 from model.hourglass_yolo_net import HOURGLASSYOLONet
-# from dataset.timer import Timer
 from dataset.coco import Coco
-# from dataset import gene_hm
-# from dataset import processing
 import tensorflow.contrib.slim as slim
-from utils import ev_ap
-
-
-# slim = tf.contrib.slim
 
 
 class Solver(object):
@@ -165,26 +157,6 @@ class Solver(object):
             step += 1
         self.coord.request_stop()
         self.coord.join(self.threads)
-
-    def evaluate(self):
-        step = 0
-        ap = 0
-        timer = Timer()
-        timer.tic()
-        while step < 20:
-        #while step < cfg.COCO_VAL_EPOCH_SIZE:
-            val_im_bt, val_det_bt, _ = self.data.get("val")
-            net_output = self.sess.run(self.net.yolo_logits,
-                                       feed_dict={self.net.images: val_im_bt})
-            ap += ev_ap.ev_ap(net_output, val_det_bt)
-            step += 1
-            print("step:", step)
-            if step == 20:
-                timer.toc()
-                print('Average detecting time: {:.3f}s'.format(
-                    timer.average_time))
-            print(ap)
-        return ap / cfg.COCO_VAL_EPOCH_SIZE
 
     def save_cfg(self):
 

@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from dataset.utils import gene_hm
+from dataset.Dutils import gene_hm
 
 
 def tiny_adjust(label):

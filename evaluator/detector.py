@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from utils import config as cfg
-from evaluator.eval_utils.nms import py_cpu_nms
+from evaluator.Eutils.nms import py_cpu_nms
 
 
 class Detector(object):

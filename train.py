@@ -2,10 +2,10 @@ import os
 import argparse
 import datetime
 import tensorflow as tf
-import hg_yolo.config as cfg
-from hg_yolo.hourglass_yolo_net import HOURGLASSYOLONet
-from dataset.timer import Timer
-from dataset.hg_voc import hg_voc
+import utils.config as cfg
+from model.hourglass_yolo_net import HOURGLASSYOLONet
+from utils.timer import Timer
+from dataset.hgvoc import hg_voc
 # from dataset import gene_hm
 # from dataset import processing
 
@@ -163,13 +163,6 @@ class Solver(object):
                 if key[0].isupper():
                     cfg_str = '{}: {}\n'.format(key, cfg_dict[key])
                     f.write(cfg_str)
-
-    def get_tuned_variables(self, exclusions):
-        for var in slim.get_model_variables():
-            exclued = False
-            for exclusion in exclusions:
-                if var.op.name.startswith(exclusion):
-                    exc
 
 
 def update_config_paths(data_dir, weights_file):

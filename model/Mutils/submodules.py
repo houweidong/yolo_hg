@@ -163,3 +163,43 @@ def leaky_relu(alpha):
         return tf.nn.leaky_relu(inputs, alpha=alpha, name='leaky_relu')
 
     return op
+
+
+def tail(r_lin, nFeats, ch, cell_size):
+    return conv2(r_lin,
+                 1,
+                 [1, 1, 1, 1],
+                 nFeats,
+                 ch)
+
+
+def tail_tsp(r_lin, nFeats, ch, cell_size):
+    r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
+    r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
+    # print(nFeats // 2)
+    x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], cell_size, nFeats // 2)
+    y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], cell_size, nFeats // 2)
+    c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+    ct_conv = tf.concat([x_conv, y_conv, c_conv], axis=3)
+    conv_down = conv2(ct_conv, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
+    return conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
+    
+    
+def tail_tsp_self(r_lin, nFeats, ch, cell_size):
+    r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
+    r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
+    x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], cell_size, nFeats // 2)
+    y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], cell_size, nFeats // 2)
+    c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+    yolo_output_x = conv2(x_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
+    yolo_output_y = conv2(y_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
+    yolo_output_c = conv2(c_conv, 1, [1, 1, 1, 1], nFeats, ch)
+    return yolo_output_x + yolo_output_y + yolo_output_c
+
+
+def tail_conv(r_lin, nFeats, ch, cell_size):
+    conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+    conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], nFeats, nFeats)
+    conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], nFeats, nFeats * 2)
+    conv_down = conv2(conv_3, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
+    return conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)

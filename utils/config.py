@@ -53,9 +53,11 @@ HEIGHT = 512
 HM_HEIGHT = 64
 HM_WIDTH = 64
 WHAT_FACK = 10
-#NPOINTS = 16
 COCO_NPOINTS = 17
 HG_CELL_SIZE = 64
+NUM_MOUDEL = 1  # hourglass 中residual 模块的数量
+NUM_STACK = 2  # hourglass 堆叠的层数
+NUM_FEATS = 256  # hourglass 中特征图的数量
 # ------------------------------------------------------------
 
 
@@ -101,7 +103,7 @@ STAIRCASE_HG = True
 
 # ------------------------------------------------------------
 # test parameter
-THRESHOLD = 0.3
+THRESHOLD = 0.5
 IOU_THRESHOLD_NMS = 0.5
 IOU_THRESHOLD_GT = 0.5
 COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/person_keypoints_val2017.json'

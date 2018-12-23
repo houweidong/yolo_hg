@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from utils import config as cfg
 import json
-from evaluator.eval_utils.draw_result import draw_result
+from evaluator.Eutils.draw_result import draw_result
 
 
 class COCO_VAL(object):
