@@ -251,14 +251,14 @@ def main():
     detector = Detector(yolo, weight_file)
 
     # detect from camera
-    # cap = cv2.VideoCapture(-1)
-    # detector.camera_detector(cap)
+    cap = cv2.VideoCapture(-1)
+    detector.camera_detector(cap)
 
     # detect from image file
-    ims_pth = "/root/dataset/val2017"
-    #ims_pth = "../pictures/"
-    imname = 'pictures/2.jpg'
-    detector.images_detector(ims_pth)
+    # ims_pth = "/root/dataset/val2017"
+    # #ims_pth = "../pictures/"
+    # imname = 'pictures/2.jpg'
+    # detector.images_detector(ims_pth)
 
 
 if __name__ == '__main__':

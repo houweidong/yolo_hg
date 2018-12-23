@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-slim = tf.contrib.slim
-
 """
 残差网络
 """

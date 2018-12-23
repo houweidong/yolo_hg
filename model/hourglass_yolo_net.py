@@ -9,8 +9,6 @@ slim = tf.contrib.slim
 class HOURGLASSYOLONet(object):
 
     def __init__(self):
-        # , is_training=True):
-        # self.lf_tsp = cfg.LOOK_FEATURES_TRANSPOSE
         self.loss_factor = cfg.LOSS_FACTOR
         self.is_training = True
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
@@ -20,17 +18,10 @@ class HOURGLASSYOLONet(object):
         self.hg_cell_size = cfg.HG_CELL_SIZE
         self.cell_size = cfg.CELL_SIZE
         self.boxes_per_cell = cfg.BOXES_PER_CELL
-        # self.output_size = (self.cell_size * self.cell_size) *\
-        #     (self.num_class + self.boxes_per_cell * 5) if self.num_class != 1 \
-        #     else (self.cell_size * self.cell_size) * self.boxes_per_cell * 5
         self.ch_size = (self.num_class + self.boxes_per_cell * 5) if self.num_class != 1 \
             else self.boxes_per_cell * 5
-        # self.scale = 1.0 * self.image_size / self.cell_size
-        # self.boundary1 = self.cell_size * self.cell_size * self.num_class if self.num_class != 1 else 0
         self.boundary1 = self.num_class if self.num_class != 1 else 0
         self.boundary2 = self.boundary1 + self.boxes_per_cell
-        # self.boundary2 = self.boundary1 +\
-        #     self.cell_size * self.cell_size * self.boxes_per_cell
 
         self.object_scale = cfg.OBJECT_SCALE
         self.noobject_scale = cfg.NOOBJECT_SCALE
@@ -38,10 +29,7 @@ class HOURGLASSYOLONet(object):
         self.coord_scale = cfg.COORD_SCALE
 
         self.learning_rate = cfg.LEARNING_RATE
-        # self.batch_size = cfg.BATCH_SIZE
         self.batch_size = cfg.COCO_BATCH_SIZE
-        # self.keep_prob = cfg.KEEP_PROB
-        # self.alpha = cfg.ALPHA
 
         self.offset = np.transpose(np.reshape(np.array(
             [np.arange(self.cell_size)] * self.cell_size * self.boxes_per_cell),
@@ -51,7 +39,6 @@ class HOURGLASSYOLONet(object):
             tf.float32, [None, self.image_size, self.image_size, 3],
             name='images')
         self.hg_logits, self.yolo_logits = self.build_network()
-        # if self.is_training:
         self.labels_det = tf.placeholder(
             tf.float32,
             [None,
@@ -69,6 +56,146 @@ class HOURGLASSYOLONet(object):
                             [self.labels_det, self.labels_kp])
 
     def build_network(self):
+        # def model(input_x, is_training):
+    def model(input_x,
+              shape,
+              # alpha,
+              # keep_prob,
+              # is_training=True,
+              add_yolo_position="tail"
+              ):  # add yolo position, support middle tail tail_cov tail_tsp
+        # conv=conv2(input_x,7,[1,2,2,1])
+        batch_size, cell_hight, cell_width, ch = shape
+        with tf.name_scope('conv_pad3'):
+            cp = pad_conv2(input_x, [[0, 0], [3, 3], [3, 3], [0, 0]], 7, [1, 2, 2, 1], 3, 64)
+        with tf.name_scope('batch_norm_relu'):
+            bn = batch_norm_relu(cp)
+        with tf.name_scope('residual1'):
+            r1 = bottleneck_residual(bn, [1, 1, 1, 1], 64, 128)
+        with tf.name_scope('down_sampling'):
+            ds = down_sampling(r1, [1, 2, 2, 1], [1, 2, 2, 1])
+        with tf.name_scope('residual2'):
+            r2 = bottleneck_residual(ds, [1, 1, 1, 1], 128, 128)
+        with tf.name_scope('residual3'):
+            r3 = bottleneck_residual(r2, [1, 1, 1, 1], 128, nFeats)
+
+        output, yolo_output = None, None
+        # hourglass 的输入
+        h_input = r3
+        for n in range(nStack):
+            with tf.name_scope('hourglass' + str(n + 1)):
+                h1 = hourglass(h_input, nFeats, 4)
+            residual = h1
+            for i in range(nMoudel):
+                with tf.name_scope('residual' + str(i + 1)):
+                    residual = bottleneck_residual(residual, [1, 1, 1, 1], nFeats, nFeats)
+            with tf.name_scope('lin'):
+                r_lin = lin(residual, nFeats, nFeats)
+
+                # add yolo_head in the tail of hg_net
+                if n == nStack - 1:
+                    # and add_yolo_position != "middle":
+                    if add_yolo_position == "tail":
+                        yolo_output = conv2(r_lin,
+                                            1,
+                                            [1, 1, 1, 1],
+                                            nFeats,
+                                            ch)
+                    elif add_yolo_position == "tail_tsp":
+                        r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
+                        r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
+                        # print(nFeats // 2)
+                        x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], x_c, nFeats // 2)
+                        y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], y_c, nFeats // 2)
+                        c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+                        ct_conv = tf.concat([x_conv, y_conv, c_conv], axis=3)
+                        conv_down = conv2(ct_conv, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
+                        yolo_output = conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
+                    elif add_yolo_position == "tail_tsp_self":
+                        r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
+                        r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
+                        x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], x_c, nFeats // 2)
+                        y_conv = conv2(r_lin_y, 3, [1, 1, 4, 1], y_c, nFeats // 2)
+                        c_conv = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+                        yolo_output_x = conv2(x_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
+                        yolo_output_y = conv2(y_conv, 1, [1, 1, 1, 1], nFeats // 2, ch)
+                        yolo_output_c = conv2(c_conv, 1, [1, 1, 1, 1], nFeats, ch)
+                        yolo_output = yolo_output_x + yolo_output_y + yolo_output_c
+
+                    else:
+                        conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], nFeats, nFeats)
+                        conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], nFeats, nFeats)
+                        conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], nFeats, nFeats * 2)
+                        conv_down = conv2(conv_3, 1, [1, 1, 1, 1], nFeats * 2, nFeats)
+                        yolo_output = conv2(conv_down, 1, [1, 1, 1, 1], nFeats, ch)
+
+            with tf.name_scope('conv_same'):
+                output = conv2(r_lin, 1, [1, 1, 1, 1], nFeats, nPoint, padding='VALID')  # 特征图输出
+            if n < (nStack - 1):
+                # print(n)
+                with tf.name_scope('next_input'):
+                    c_output = conv2(output, 1, [1, 1, 1, 1], nPoint, nFeats)  # 卷积的输出
+                    h_input = tf.add(h_input, tf.add(r_lin, c_output))
+
+        # output=tf.reshape(output,(-1,16,64,64),name='output')
+        output = tf.transpose(output, [0, 3, 1, 2], name='output')  # transpose和reshape结果是不一样的
+
+        # if add_yolo_position == "middle":
+        #     with tf.variable_scope('yolo'):
+        #         with slim.arg_scope(
+        #                 [slim.conv2d, slim.fully_connected],
+        #                 activation_fn=leaky_relu(alpha),
+        #                 weights_regularizer=slim.l2_regularizer(0.0005),
+        #                 weights_initializer=tf.contrib.layers.xavier_initializer(uniform=False)
+        #         ):
+        #             # transform 64*64*256 to 56*56*256
+        #             net = slim.conv2d(r3, 256, 5, padding='VALID', scope='conv_64_2_52_1')
+        #             net = slim.conv2d(net, 256, 5, padding='VALID', scope='conv_64_2_52_2')
+        #             # use 3-last layers of yolo_net
+        #             net = slim.conv2d(net, 128, 1, scope='conv_6')
+        #             net = slim.conv2d(net, 256, 3, scope='conv_7')
+        #             net = slim.conv2d(net, 256, 1, scope='conv_8')
+        #             net = slim.conv2d(net, 512, 3, scope='conv_9')
+        #             net = slim.max_pool2d(net, 2, padding='SAME', scope='pool_10')
+        #             net = slim.conv2d(net, 256, 1, scope='conv_11')
+        #             net = slim.conv2d(net, 512, 3, scope='conv_12')
+        #             net = slim.conv2d(net, 256, 1, scope='conv_13')
+        #             net = slim.conv2d(net, 512, 3, scope='conv_14')
+        #             net = slim.conv2d(net, 256, 1, scope='conv_15')
+        #             net = slim.conv2d(net, 512, 3, scope='conv_16')
+        #             net = slim.conv2d(net, 256, 1, scope='conv_17')
+        #             net = slim.conv2d(net, 512, 3, scope='conv_18')
+        #             net = slim.conv2d(net, 512, 1, scope='conv_19')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_20')
+        #             net = slim.max_pool2d(net, 2, padding='SAME', scope='pool_21')
+        #             net = slim.conv2d(net, 512, 1, scope='conv_22')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_23')
+        #             net = slim.conv2d(net, 512, 1, scope='conv_24')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_25')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_26')
+        #             net = tf.pad(
+        #                 net, np.array([[0, 0], [1, 1], [1, 1], [0, 0]]),
+        #                 name='pad_27')
+        #             net = slim.conv2d(
+        #                 net, 1024, 3, 2, padding='VALID', scope='conv_28')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_29')
+        #             net = slim.conv2d(net, 1024, 3, scope='conv_30')
+        #             net = tf.transpose(net, [0, 3, 1, 2], name='trans_31')
+        #             net = slim.flatten(net, scope='flat_32')
+        #             net = slim.fully_connected(net, 512, scope='fc_33')
+        #             net = slim.fully_connected(net, 4096, scope='fc_34')
+        #             net = slim.dropout(
+        #                 net, keep_prob=keep_prob, is_training=is_training,
+        #                 scope='dropout_35')
+        #             yolo_output = slim.fully_connected(
+        #                 net, cell_hight * cell_width * ch, activation_fn=None, scope='fc_36')
+        #             yolo_output = tf.reshape(yolo_output,
+        #                                      [-1, ch, cell_hight, cell_width],
+        #                                      name='rs_37')
+        #             yolo_output = tf.transpose(yolo_output, [0, 2, 3, 1], name='trans_38')
+        #
+        #        tf.summary.image('output', tf.transpose(output[0:1, :, :, :], [3, 1, 2, 0]), max_outputs=16)
+        return output, yolo_output
         return model(self.images,
                      (self.batch_size, self.cell_size, self.cell_size, self.ch_size),
                      # self.alpha,
