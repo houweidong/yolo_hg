@@ -141,11 +141,11 @@ class EVALUATOR(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail", type=str,
+    parser.add_argument('--position', default="tail_conv", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--weights', default="hg_yolo-600000", type=str)
-    parser.add_argument('--weight_dir', default='../log/20_1_100_5e-4', type=str)
+    parser.add_argument('--weights', default="hg_yolo-480000", type=str)
+    parser.add_argument('--weight_dir', default='../log/20_1_80_conv', type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     args = parser.parse_args()

@@ -227,8 +227,8 @@ def tail_conv_deep(r_lin, csize_ch):
     ch, _ = csize_ch
     _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
     conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
-    conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
-    conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
+    conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2)
+    conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2)
     conv_down = conv2(conv_3, 1, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch)
     return conv2(conv_down, 1, [1, 1, 1, 1], r_lin_ch, ch)
 
@@ -244,8 +244,8 @@ def tail_conv_deep_fc(r_lin, csize_ch):
         r1 = bottleneck_residual(ds, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 4)
     with tf.name_scope('tail_down_sampling2'):
         ds = down_sampling(r1, [1, 2, 2, 1], [1, 2, 2, 1])  # 16 * 16 * 1024
-    max_p = global_average_pooling(ds)
+    with tf.name_scope('tail_residual3'):
+        r1 = bottleneck_residual(ds, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4)
+    max_p = global_average_pooling(r1)
     fc = slim.fully_connected(max_p, cell_size * cell_size * ch, activation_fn=None, scope='fc')
     return tf.reshape(fc, [batch, cell_size, cell_size, ch])
-
-

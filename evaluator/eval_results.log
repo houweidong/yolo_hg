@@ -1,2 +1,5 @@
 AP: 0.21177285794411357    Position: tail    Weights: hg_yolo-600000
-AP: 0.21177285794411357    Position: tail    Weights: hg_yolo-600000
+AP: 0.34871879681364526    Position: tail    Weights: hg_yolo-570000
+AP: 0.3473858034942147    Position: tail_tsp    Weights: hg_yolo-510000
+AP: 0.3332606352585999    Position: tail_tsp_self    Weights: hg_yolo-510000
+AP: 0.3537630654002022    Position: tail_conv    Weights: hg_yolo-480000

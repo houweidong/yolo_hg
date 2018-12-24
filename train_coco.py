@@ -74,10 +74,7 @@ class Solver(object):
 
         if self.weights_file is not None:
             print('Restoring weights from: ' + self.weights_file)
-            # self.saver.restore(self.sess, self.weights_file)
-            slim.assign_from_checkpoint_fn(self.weights_file,
-                                           self.get_tuned_variables(),
-                                           ignore_missing_vars=True)
+            self.restore()
 
         self.writer.add_graph(self.sess.graph)
 
@@ -199,6 +196,16 @@ class Solver(object):
             print('not support now')
         return list(set(variables_to_train))
 
+    def restore(self):
+        if self.train_sp == 'all':
+            ckpt = tf.train.get_checkpoint_state(self.weights_file)
+            if ckpt and ckpt.model_checkpoint_path:
+                self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+        else:
+            slim.assign_from_checkpoint_fn(self.weights_file,
+                                           self.get_tuned_variables(),
+                                           ignore_missing_vars=True)
+
 
 # def update_config_paths(data_dir, weights_file):
 #     cfg.DATA_PATH = data_dir
@@ -224,10 +231,9 @@ def update_config(args):
         cfg.OUTPUT_DIR_TASK = args.log_dir
 
     cfg.ADD_YOLO_POSITION = args.position
-    # if args.load_weights:
-    #     # update_config_paths(args.data_dir, args.weights)
-    #     cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, args.weights)
-    #     cfg.ADD_YOLO_POSITION = "middle"
+    if args.load_weights:
+        # update_config_paths(args.data_dir, args.weights)
+        cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, args.weights)
     cfg.LOSS_FACTOR = args.factor
     cfg.OBJECT_SCALE = args.ob_f
     cfg.NOOBJECT_SCALE = args.noob_f
@@ -236,22 +242,20 @@ def update_config(args):
     cfg.CELL_SIZE = args.csize
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
-    print("LOSS_FACTOR:{}   OB_SC:{}    NOOB_SC:{}  COO_SC:{}".format(args.factor,
-                                                                      args.ob_f,
-                                                                      args.noob_f,
-                                                                      args.coo_f))
+    print("LOSS_FACTOR:{}  OB_SC:{}  "
+          "NOOB_SC:{}  COO_SC:{}".format(args.factor, args.ob_f, args.noob_f, args.coo_f))
     print("LR: {}".format(cfg.COCO_LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
 
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
+    parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--position', default="tail", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
-    # parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
-    # parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
+    parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
+    parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('--factor', default=0.01, type=float)

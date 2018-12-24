@@ -34,7 +34,13 @@ class HOURGLASSYOLONet(object):
             [np.arange(self.cell_size)] * self.cell_size * self.boxes_per_cell),
             (self.boxes_per_cell, self.cell_size, self.cell_size)), (1, 2, 0))
 
-        self.batch_size = 1 if train_eval_visual == 'visual' else cfg.COCO_BATCH_SIZE
+        # self.batch_size = 1 if train_eval_visual == 'visual' else cfg.COCO_BATCH_SIZE
+        if train_eval_visual == 'train':
+            self.batch_size = cfg.COCO_BATCH_SIZE
+        elif train_eval_visual == 'eval':
+            self.batch_size = None
+        else:
+            self.batch_size = 1
         self.images = tf.placeholder(
             tf.float32, [self.batch_size, self.image_size, self.image_size, 3],
             name='images')
@@ -44,15 +50,11 @@ class HOURGLASSYOLONet(object):
         if train_eval_visual == 'train':
             self.labels_det = tf.placeholder(
                 tf.float32,
-                [self.batch_size,
-                 self.cell_size,
-                 self.cell_size,
+                [self.batch_size, self.cell_size, self.cell_size,
                  self.num_class + 5 if self.num_class != 1 else 5])
             self.labels_kp = tf.placeholder(
                 tf.float32,
-                [self.batch_size,
-                 self.nPoints,
-                 self.hg_cell_size,
+                [self.batch_size, self.nPoints, self.hg_cell_size,
                  self.hg_cell_size])
             self.loss, self.hg_loss, self.yolo_loss = \
                 self.loss_layer([self.hg_logits, self.yolo_logits],

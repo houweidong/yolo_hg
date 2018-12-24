@@ -195,10 +195,10 @@ def _create_tf_record_from_coco_annotations(
                 .format(len(groundtruth_data['annotations'])))
             for annotation in groundtruth_data['annotations']:
                 image_id = annotation['image_id']
-                num_keypoints = annotation['num_keypoints']
+                # num_keypoints = annotation['num_keypoints']
 
-                if num_keypoints == 0:
-                    continue
+                # if num_keypoints == 0:
+                #     continue
                 if image_id not in annotations_index:
                     annotations_index[image_id] = []
                 annotations_index[image_id].append(annotation)
