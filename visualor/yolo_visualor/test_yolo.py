@@ -231,9 +231,11 @@ class Detector(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail", type=str, choices=["tail", "middle"])
-    parser.add_argument('--weights', default="hg_yolo-600000", type=str)
-    parser.add_argument('--weight_dir', default='../../log/20_1_100_5e-4', type=str)
+    parser.add_argument('--position', default="tail_tsp", type=str,
+                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+                                 "tail_conv_deep", "tail_conv_deep_fc"])
+    parser.add_argument('--weights', default="hg_yolo-510000", type=str)
+    parser.add_argument('--weight_dir', default='../../log/20_1_80_tsp', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -245,20 +247,20 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     cfg.ADD_YOLO_POSITION = args.position
-    yolo = HOURGLASSYOLONet()
+    yolo = HOURGLASSYOLONet('visual')
     weight_file = os.path.join(args.weight_dir, args.weights)
     print(weight_file)
     detector = Detector(yolo, weight_file)
 
     # detect from camera
-    cap = cv2.VideoCapture(-1)
-    detector.camera_detector(cap)
+    # cap = cv2.VideoCapture(-1)
+    # detector.camera_detector(cap)
 
     # detect from image file
     # ims_pth = "/root/dataset/val2017"
-    # #ims_pth = "../pictures/"
-    # imname = 'pictures/2.jpg'
-    # detector.images_detector(ims_pth)
+    ims_pth = "../pictures/"
+    imname = 'pictures/2.jpg'
+    detector.images_detector(ims_pth)
 
 
 if __name__ == '__main__':

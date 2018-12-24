@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from utils import config as cfg
 import json
+import math
 from evaluator.Eutils.draw_result import draw_result
 
 
@@ -17,6 +18,7 @@ class COCO_VAL(object):
         self.image_size = cfg.IMAGE_SIZE
         self.cursor = 0
         self.image_mat, self.bbox_mat, self.gt = self.prepare_data()
+        self.num_batch = math.ceil(self.annotations_size / self.batch_size)
 
     def get_batch(self):
         if self.cursor <= self.annotations_size - self.batch_size:

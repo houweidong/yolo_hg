@@ -233,6 +233,7 @@ def update_config(args):
     cfg.NOOBJECT_SCALE = args.noob_f
     cfg.COORD_SCALE = args.coo_f
     cfg.CLASS_SCALE = args.cl_f
+    cfg.CELL_SIZE = args.csize
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}   OB_SC:{}    NOOB_SC:{}  COO_SC:{}".format(args.factor,
@@ -246,10 +247,9 @@ def update_config(args):
 def main():
     parser = argparse.ArgumentParser()
     # parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
-    parser.add_argument('--position',
-                        default="tail",
-                        type=str,
-                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self"])
+    parser.add_argument('--position', default="tail", type=str,
+                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+                                 "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
     # parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)
@@ -259,10 +259,11 @@ def main():
     parser.add_argument('--noob_f', default=1.0, type=float)
     parser.add_argument('--coo_f', default=5.0, type=float)
     parser.add_argument('--cl_f', default=2.0, type=float)
+    parser.add_argument('--csize', default=64, type=int)
     args = parser.parse_args()
 
     update_config(args)
-    hg_yolo = HOURGLASSYOLONet()
+    hg_yolo = HOURGLASSYOLONet('train')
     dataset = Coco()
     solver = Solver(hg_yolo, dataset)
 

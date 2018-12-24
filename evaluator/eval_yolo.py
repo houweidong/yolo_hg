@@ -6,6 +6,9 @@ from model.hourglass_yolo_net import HOURGLASSYOLONet
 from evaluator.coco_val import COCO_VAL
 from evaluator.detector import Detector
 from utils.logger import Logger
+from tqdm import tqdm
+
+
 # import cv2
 # from evaluator.Eutils.draw_result import draw_result
 
@@ -23,11 +26,10 @@ class EVALUATOR(object):
     def prepare(self):
         image_ids, bboxes, prob = [], [], []
         annotations = {}
-        img_batch, bbox_batch = self.data.get_batch()
-        i = 1
-        while img_batch:
-            print("{:<5}th batch".format(i))
-            i += 1
+        # while img_batch:
+        for i in tqdm(range(self.data.num_batch), desc='batch forward'):
+            # print("{:5}th batch".format(i))
+            img_batch, bbox_batch = self.data.get_batch()
             results = self.detector.detect_batch(img_batch)
             for ii in range(len(results)):
                 boxes_filtered, probs_filtered, _ = results[ii]
@@ -46,7 +48,6 @@ class EVALUATOR(object):
                 prob.extend(probs_filtered)
                 if bbox_batch[ii]['id'] not in annotations:
                     annotations[bbox_batch[ii]['id']] = bbox_batch[ii]['bbox_det']
-            img_batch, bbox_batch = self.data.get_batch()
         sorted_ind = np.argsort(prob)[::-1]
         sorted_prob = np.sort(prob)[::-1]
         BB = np.array(bboxes)
@@ -58,7 +59,8 @@ class EVALUATOR(object):
         nd = len(self.image_ids)
         tp = np.zeros(nd)
         fp = np.zeros(nd)
-        for d in range(nd):
+        for d in tqdm(range(nd), desc='painting PR curve'):
+            # for d in range(nd):
             R = self.annotations[self.image_ids[d]]
             bb = self.bboxes[d, :].astype(float)
             ovmax = -np.inf
@@ -139,10 +141,9 @@ class EVALUATOR(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position',
-                        default="tail",
-                        type=str,
-                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self"])
+    parser.add_argument('--position', default="tail", type=str,
+                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+                                 "tail_conv_deep", "tail_conv_deep_fc"])
     parser.add_argument('--weights', default="hg_yolo-600000", type=str)
     parser.add_argument('--weight_dir', default='../log/20_1_100_5e-4', type=str)
     parser.add_argument('--gpu', type=str)
@@ -155,7 +156,7 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     cfg.ADD_YOLO_POSITION = args.position
-    net = HOURGLASSYOLONet()
+    net = HOURGLASSYOLONet('eval')
     detector = Detector(net, os.path.join(args.weight_dir, args.weights))
 
     data = COCO_VAL()

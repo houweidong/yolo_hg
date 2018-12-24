@@ -6,9 +6,8 @@ from model.Mutils import submodules
 
 class HOURGLASSYOLONet(object):
 
-    def __init__(self):
+    def __init__(self, train_eval_visual='train'):
         self.loss_factor = cfg.LOSS_FACTOR
-        self.is_training = True
         self.nMoudel = cfg.NUM_MOUDEL  # hourglass 中residual 模块的数量
         self.nStack = cfg.NUM_STACK  # hourglass 堆叠的层数
         self.nFeats = cfg.NUM_FEATS  # hourglass 中特征图的数量
@@ -30,31 +29,34 @@ class HOURGLASSYOLONet(object):
         self.coord_scale = cfg.COORD_SCALE
 
         self.learning_rate = cfg.LEARNING_RATE
-        self.batch_size = cfg.COCO_BATCH_SIZE
 
         self.offset = np.transpose(np.reshape(np.array(
             [np.arange(self.cell_size)] * self.cell_size * self.boxes_per_cell),
             (self.boxes_per_cell, self.cell_size, self.cell_size)), (1, 2, 0))
 
+        self.batch_size = 1 if train_eval_visual == 'visual' else cfg.COCO_BATCH_SIZE
         self.images = tf.placeholder(
-            tf.float32, [None, self.image_size, self.image_size, 3],
+            tf.float32, [self.batch_size, self.image_size, self.image_size, 3],
             name='images')
+
         self.hg_logits, self.yolo_logits = self.build_network()
-        self.labels_det = tf.placeholder(
-            tf.float32,
-            [None,
-             self.cell_size,
-             self.cell_size,
-             self.num_class + 5 if self.num_class != 1 else 5])
-        self.labels_kp = tf.placeholder(
-            tf.float32,
-            [None,
-             self.nPoints,
-             self.hg_cell_size,
-             self.hg_cell_size])
-        self.loss, self.hg_loss, self.yolo_loss = \
-            self.loss_layer([self.hg_logits, self.yolo_logits],
-                            [self.labels_det, self.labels_kp])
+
+        if train_eval_visual == 'train':
+            self.labels_det = tf.placeholder(
+                tf.float32,
+                [self.batch_size,
+                 self.cell_size,
+                 self.cell_size,
+                 self.num_class + 5 if self.num_class != 1 else 5])
+            self.labels_kp = tf.placeholder(
+                tf.float32,
+                [self.batch_size,
+                 self.nPoints,
+                 self.hg_cell_size,
+                 self.hg_cell_size])
+            self.loss, self.hg_loss, self.yolo_loss = \
+                self.loss_layer([self.hg_logits, self.yolo_logits],
+                                [self.labels_det, self.labels_kp])
 
     def build_network(self):
         # conv=conv2(input_x,7,[1,2,2,1])
@@ -88,9 +90,7 @@ class HOURGLASSYOLONet(object):
                 if n == self.nStack - 1:
                     yolo_output = getattr(submodules,
                                           self.add_yolo_position)(r_lin,
-                                                                  self.nFeats,
-                                                                  self.ch_size,
-                                                                  self.cell_size)
+                                                                  (self.ch_size, self.cell_size))
             with tf.name_scope('conv_same'):
                 output = conv2(r_lin, 1, [1, 1, 1, 1], self.nFeats, self.nPoints, padding='VALID')  # 特征图输出
             if n < (self.nStack - 1):
