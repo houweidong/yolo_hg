@@ -26,6 +26,8 @@ COCO_CLASSES = ['person']
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
 COCO_TRAIN_FILENAME = '/root/dataset/tfrecord/train/'
 COCO_VAL_FILENAME = '/root/dataset/tfrecord/val/'
+# COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord/train/'
+# COCO_VAL_FILENAME = '/home/new/dataset/tfrecord/val/'
 # ------------------------------------------------------------
 
 
