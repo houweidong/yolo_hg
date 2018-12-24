@@ -1,6 +1,6 @@
 import numpy as np
 import math
-
+import utils.config as cfg
 HM_HEIGHT = 64
 HM_WIDTH = 64
 nPoints = 16
@@ -74,13 +74,16 @@ def batch_genehm(batch_size, l, if_gauss):
     return label
 
 
-def batch_genehm_for_coco(batch_size, l, num_points, if_gauss=True):
+def batch_genehm_for_coco(batch_size, l, b_bbox, num_points, if_gauss=True):
     re_label = resize_label(l)
-    label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
+    # label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
+    label = -1 * np.ones((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
     if if_gauss:
         for i in range(batch_size):
-            label[i] = generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i][0:num_points], 64, num_points) + generate_hm(
-                HM_HEIGHT, HM_WIDTH, re_label[i][num_points:], 64, num_points)
+            for i_p in range(cfg.COCO_MAX_PERSON_PER_PIC):
+                # print('bbox', b_bbox[i])
+                label[i] += generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i][i_p * num_points:i_p * num_points+num_points],
+                                        64, num_points)
     else:
         for i in range(batch_size):
             label[i] = one_point_hm(HM_HEIGHT, HM_WIDTH, re_label[i]) + one_point_hm(HM_HEIGHT, HM_WIDTH,
