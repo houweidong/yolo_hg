@@ -51,7 +51,7 @@ def tiny_adjust(label):
 
 
 
-with open('../xiaolunwen/result_diff.txt') as f:
+with open('./xiaolunwen/result_diff.txt') as f:
     results=f.readlines()
 
     for result in results:

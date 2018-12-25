@@ -8,14 +8,14 @@ nPoints = cfg.COCO_NPOINTS
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 #加载模型，进行预测
 #path=r'E:\论文\投稿论文\图片'#预测图片文件夹
-path = '../pictures'
+path = '/root/dataset/val2017'
 result_path = './xiaolunwen'
 
 if not os.path.exists(result_path):
     os.makedirs(result_path)
-result=open('../xiaolunwen/result_diff.txt','w+')
+result=open('./xiaolunwen/result_diff.txt','w+')
 with tf.Session() as sess:
-    cp_path = '../log/10_1_30'
+    cp_path = '../../log/20_1_80_conv'
     ckpt = tf.train.get_checkpoint_state(cp_path)  # 通过检查文件锁定最新模型,时间
     if ckpt and ckpt.model_checkpoint_path:#ckpt.model_checkpoint_path最新的模型
         print(ckpt.model_checkpoint_path)

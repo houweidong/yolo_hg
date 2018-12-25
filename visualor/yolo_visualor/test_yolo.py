@@ -226,16 +226,16 @@ class Detector(object):
             cv2.waitKey(wait)
         print('Average detecting time: {:.3f}s'.format(
             detect_timer.average_time))
-        #cv2.waitKey(wait)
+        # cv2.waitKey(wait)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail_tsp", type=str,
+    parser.add_argument('--position', default="tail", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--weights', default="hg_yolo-510000", type=str)
-    parser.add_argument('--weight_dir', default='../../log/20_1_80_tsp', type=str)
+    parser.add_argument('--weights', default="hg_yolo-570000", type=str)
+    parser.add_argument('--weight_dir', default='../../log/20_1_80_tail', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -257,8 +257,8 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    # ims_pth = "/root/dataset/val2017"
-    ims_pth = "../pictures/"
+    ims_pth = "/root/dataset/val2017"
+    # ims_pth = "../pictures1/"
     imname = 'pictures/2.jpg'
     detector.images_detector(ims_pth)
 

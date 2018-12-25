@@ -293,7 +293,8 @@ class HOURGLASSYOLONet(object):
                 name='coord_loss') * self.coord_scale
             yolo_loss = class_loss + object_loss + noobject_loss + coord_loss
 
-            diff1 = tf.subtract(hg_logits, labels_kp)
+            area_mask = tf.cast(tf.greater_equal(labels_kp, 0.0), tf.float32)
+            diff1 = tf.subtract(hg_logits, labels_kp) * area_mask
             hg_loss = tf.reduce_mean(tf.nn.l2_loss(diff1, name='l2loss')) * self.loss_factor
             # tf.losses.add_loss(hg_loss)
             loss = yolo_loss + hg_loss
