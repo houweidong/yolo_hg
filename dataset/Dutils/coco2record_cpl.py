@@ -128,6 +128,7 @@ def create_tf_example(image,
     keypoints = []
     num_keypoints = []
     bboxes = []
+    category_id = []
     result_dict = {'num_annotations_skipped': None, 'example': None, 'num_iscrowd': None}
     num_annotations_skipped = 0
     # num_objects = 0
@@ -154,6 +155,7 @@ def create_tf_example(image,
         bboxes.extend([xmin, ymin, xmax, ymax])
         keypoints.extend(object_annotations['keypoints'])
         num_keypoints.append(object_annotations['num_keypoints'])
+        category_id.append(object_annotations['category_id'])
         # num_objects += 1
 
     if len(bboxes) != 0 and len(keypoints) != 0:
@@ -177,6 +179,8 @@ def create_tf_example(image,
                 bytes_feature(encoded_jpg),
             'image/object/bboxes':
                 float_list_feature(bboxes),
+            'image/object/category_id':
+                int64_list_feature(category_id),
             'image/object/keypoints':
                 int64_list_feature(keypoints),
             'image/object/num_keypoints':
