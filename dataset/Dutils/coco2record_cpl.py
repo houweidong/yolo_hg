@@ -158,6 +158,8 @@ def create_tf_example(image,
         category_id.append(object_annotations['category_id'])
         # num_objects += 1
 
+    leng = len(category_id)
+
     if len(bboxes) != 0 and len(keypoints) != 0:
         if len(num_keypoints) != len(bboxes) / 4:
             print(len(num_keypoints), len(bboxes))
@@ -197,7 +199,7 @@ def create_tf_example(image,
         result_dict = {'example': feature_example_list,
                        'num_annotations_skipped': num_annotations_skipped,
                        'num_iscrowd': num_iscrowd}
-    return result_dict
+    return result_dict, leng
 
 
 def _create_tf_record_from_coco_annotations(
@@ -261,6 +263,7 @@ def _create_tf_record_from_coco_annotations(
         total_num_iscrowd = 0
         deal_img = []
         num = 0
+        max = 0
         for idx, image in enumerate(images):
 
             if idx % 100 == 0:
@@ -275,7 +278,9 @@ def _create_tf_record_from_coco_annotations(
                 tf.logging.info('%d th missed images.',
                                 num)
                 continue
-            result_dict = create_tf_example(image, annotations_dict, image_dir)
+            result_dict, leng = create_tf_example(image, annotations_dict, image_dir)
+            if leng > max:
+                max = leng
             if not result_dict['example']:
                 print('not example')
                 continue
@@ -291,8 +296,9 @@ def _create_tf_record_from_coco_annotations(
                 for i in range(len(tf_example)):
                     output_tfrecords[shard_idx].write(tf_example[i].SerializeToString())
 
-        tf.logging.info('Finished writing, skipped %d annotations, skipped %d crowd annotations',
-                        total_num_annotations_skipped, total_num_iscrowd)
+        tf.logging.info('Finished writing, skipped %d annotations, skipped %d crowd annotations'
+                        'max object nums is %d',
+                        total_num_annotations_skipped, total_num_iscrowd, max)
 
 
 def main(_):

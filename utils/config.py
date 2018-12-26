@@ -20,6 +20,7 @@ CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
            'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
            'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
            'train', 'tvmonitor']
+# COCO_CLASSES = ['noperson', 'person']
 COCO_CLASSES = ['person']
 
 # ....hourglass parameter
@@ -76,7 +77,7 @@ SUMMARY_ITER = 10
 SAVE_ITER = 20000
 # coco parameter
 COCO_MAX_PERSON_PER_PIC = 13
-COCO_MAX_OBJECT_PER_PIC = 20
+COCO_MAX_OBJECT_PER_PIC = 70
 COCO_EXAMPLES = 7843
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
