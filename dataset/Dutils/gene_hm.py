@@ -77,6 +77,7 @@ def batch_genehm(batch_size, l, if_gauss):
 
 
 def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_id, if_gauss=True):
+
     re_label = resize_label(l)
     num_points = COCO_NPOINTS
     label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)

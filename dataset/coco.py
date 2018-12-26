@@ -25,7 +25,7 @@ class Coco(object):
             self.train_labels_kp_batch, self.train_num_points \
             = read_coco_tf.batch_samples_all_categories(self.coco_batch_size,
                                                         self.coco_train_fn,
-                                                        shuffle=True)
+                                                        shuffle=False)
         self.val_im_batch, \
             self.val_labels_det_batch, self.val_labels_category, \
             self.val_labels_kp_batch, self.val_num_points \

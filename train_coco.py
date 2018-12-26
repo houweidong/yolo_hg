@@ -97,6 +97,7 @@ class Solver(object):
 
                 if step % (self.summary_iter * 10) == 0:
 
+                    # train
                     summary_str, loss, hg_loss, yolo_loss, _ = \
                         self.sess.run([self.summary_op, self.net.loss,
                                        self.net.hg_loss, self.net.yolo_loss, self.train_op],
@@ -114,15 +115,21 @@ class Solver(object):
                     print(log_str)
 
                     # val
-                    summary_str_val, loss_val, hg_loss_val, yolo_loss_val = self.sess.run(
-                        [self.summary_op_val,
-                         self.net.loss,
-                         self.net.hg_loss,
-                         self.net.yolo_loss],
-                        feed_dict=val_feed_dict)
-                    log_str_val = "VAL   Loss: {:<.3e}  HGLoss: {:<.3e}  " \
-                                  "YOLOLoss: {:<.3e}".format(loss_val, hg_loss_val, yolo_loss_val)
-                    print(log_str_val)
+                    if step % (self.summary_iter * 1000) == 0:
+                        summary_str_val, loss_val, hg_loss_val, yolo_loss_val = self.sess.run(
+                            [self.summary_op_val,
+                             self.net.loss,
+                             self.net.hg_loss,
+                             self.net.yolo_loss],
+                            feed_dict=val_feed_dict)
+                        log_str_val = "VAL   Loss: {:<.3e}  HGLoss: {:<.3e}  " \
+                                      "YOLOLoss: {:<.3e}".format(loss_val, hg_loss_val, yolo_loss_val)
+                        print(log_str_val)
+                    else:
+                        summary_str_val, _ = self.sess.run(
+                            [self.summary_op_val,
+                             self.net.loss],
+                            feed_dict=val_feed_dict)
 
                     # caculate AP for all val set
                     # if step % (self.summary_iter * 10) == 0:
@@ -243,7 +250,8 @@ def update_config(args):
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC:{}  "
-          "NOOB_SC:{}  COO_SC:{}".format(args.factor, args.ob_f, args.noob_f, args.coo_f))
+          "NOOB_SC:{}  COO_SC:{}  CL__SC:{}".
+          format(args.factor, args.ob_f, args.noob_f, args.coo_f, args.cl_f))
     print("LR: {}".format(cfg.COCO_LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
@@ -258,11 +266,11 @@ def main():
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', type=str)
-    # parser.add_argument('--factor', default=0.05, type=float)
-    parser.add_argument('--ob_f', default=1.0, type=float)
+    parser.add_argument('--factor', default=0.3, type=float)
+    parser.add_argument('--ob_f', default=20.0, type=float)
     parser.add_argument('--noob_f', default=1.0, type=float)
-    parser.add_argument('--coo_f', default=5.0, type=float)
-    parser.add_argument('--cl_f', default=2.0, type=float)
+    parser.add_argument('--coo_f', default=100.0, type=float)
+    parser.add_argument('--cl_f', default=40.0, type=float)
     parser.add_argument('--csize', default=64, type=int)
     args = parser.parse_args()
 

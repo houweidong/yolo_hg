@@ -130,7 +130,7 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 
     # label.set_shape([cfg.COCO_NPOINTS * MAX, 2])
     label = tf.cast(tf.reshape(label, [cfg.COCO_NPOINTS * MAX_OBJECT, 2]), tf.float32)
-    bbox = tf.cast(tf.reshape(bbox, (-1, 2)), tf.int64)
+    bbox = tf.reshape(bbox, (-1, 2))
     # category_id = tf.cast(category_id, tf.int64)
 
     if shuffle:

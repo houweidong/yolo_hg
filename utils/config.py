@@ -25,16 +25,16 @@ COCO_CLASSES = ['noperson', 'person']
 
 # ....hourglass parameter
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
-COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
-COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
-# COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord/train/'
-# COCO_VAL_FILENAME = '/home/new/dataset/tfrecord/val/'
+# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord/train/'
+# COCO_VAL_FILENAME = '/root/dataset/tfrecord/val/'
+COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
+COCO_VAL_FILENAME = '/home/new/dataset/tfrecord1/val/'
 # ------------------------------------------------------------
 
 
 # ------------------------------------------------------------
 # model parameter
-LOSS_FACTOR = 0.05
+LOSS_FACTOR = 0.1
 ADD_YOLO_POSITION = "tail"  # support middle | tail | tail_cov | tail_tsp | tail_tsp_self
 LOOK_FEATURES_TRANSPOSE = True
 TRAIN_OP = "all"  # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
@@ -45,10 +45,10 @@ KEEP_PROB = 0.5
 ALPHA = 0.1
 DISP_CONSOLE = False
 
-OBJECT_SCALE = 1.0
+OBJECT_SCALE = 20.0
 NOOBJECT_SCALE = 1.0
-CLASS_SCALE = 2.0
-COORD_SCALE = 5.0
+CLASS_SCALE = 40.0
+COORD_SCALE = 100.0
 
 # ....hourglass parameter
 WIDTH = 512
@@ -77,12 +77,12 @@ SUMMARY_ITER = 10
 SAVE_ITER = 20000
 # coco parameter
 COCO_MAX_PERSON_PER_PIC = 13
-COCO_MAX_OBJECT_PER_PIC = 70
-COCO_EXAMPLES = 7843
+COCO_MAX_OBJECT_PER_PIC = 100
+COCO_EXAMPLES = 117266
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
 
-COCO_VAL_EXAMPLES = 2000
+COCO_VAL_EXAMPLES = 5000
 COCO_VAL_EPOCH_SIZE = COCO_VAL_EXAMPLES // COCO_BATCH_SIZE
 
 COCO_LEARNING_RATE = 1e-4
