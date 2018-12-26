@@ -258,7 +258,7 @@ def main():
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', type=str)
-    parser.add_argument('--factor', default=0.01, type=float)
+    # parser.add_argument('--factor', default=0.05, type=float)
     parser.add_argument('--ob_f', default=1.0, type=float)
     parser.add_argument('--noob_f', default=1.0, type=float)
     parser.add_argument('--coo_f', default=5.0, type=float)

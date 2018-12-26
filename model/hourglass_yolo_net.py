@@ -205,7 +205,7 @@ class HOURGLASSYOLONet(object):
         with tf.variable_scope(scope):
 
             # probability of every class
-            predict_classes = predicts[:, :, :, self.boundary1] if self.num_class != 1 else None
+            predict_classes = predicts[:, :, :, :self.boundary1] if self.num_class != 1 else None
             # object probability
             predict_scales = predicts[:, :, :, self.boundary1:self.boundary2]
             # x, y, w, h

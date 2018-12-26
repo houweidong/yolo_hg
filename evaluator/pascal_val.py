@@ -8,7 +8,7 @@ import math
 from evaluator.Eutils.draw_result import draw_result
 
 
-class COCO_VAL(object):
+class PASCAL_VAL(object):
 
     def __init__(self):
         self.annotations_size = 0

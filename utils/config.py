@@ -20,13 +20,13 @@ CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
            'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
            'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
            'train', 'tvmonitor']
-# COCO_CLASSES = ['noperson', 'person']
-COCO_CLASSES = ['person']
+COCO_CLASSES = ['noperson', 'person']
+# COCO_CLASSES = ['person']
 
 # ....hourglass parameter
 #FILENAME = '/root/dataset/final_train_512.tfrecords'
-COCO_TRAIN_FILENAME = '/root/dataset/tfrecord/train/'
-COCO_VAL_FILENAME = '/root/dataset/tfrecord/val/'
+COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
+COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
 # COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord/train/'
 # COCO_VAL_FILENAME = '/home/new/dataset/tfrecord/val/'
 # ------------------------------------------------------------
@@ -34,7 +34,7 @@ COCO_VAL_FILENAME = '/root/dataset/tfrecord/val/'
 
 # ------------------------------------------------------------
 # model parameter
-LOSS_FACTOR = 0.01
+LOSS_FACTOR = 0.05
 ADD_YOLO_POSITION = "tail"  # support middle | tail | tail_cov | tail_tsp | tail_tsp_self
 LOOK_FEATURES_TRANSPOSE = True
 TRAIN_OP = "all"  # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
@@ -110,6 +110,6 @@ STAIRCASE_HG = True
 THRESHOLD = 0.5
 IOU_THRESHOLD_NMS = 0.5
 IOU_THRESHOLD_GT = 0.5
-COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/person_keypoints_val2017.json'
+COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
 COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
 # ------------------------------------------------------------

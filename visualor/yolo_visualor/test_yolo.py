@@ -23,7 +23,7 @@ class Detector(object):
         # self.boundary1 = self.cell_size * self.cell_size * self.num_class
         # self.boundary2 = self.boundary1 +\
         #     self.cell_size * self.cell_size * self.boxes_per_cell
-        #self.boundary1 = self.cell_size * self.cell_size * self.num_class if self.num_class != 1 else 0
+        # self.boundary1 = self.cell_size * self.cell_size * self.num_class if self.num_class != 1 else 0
         # self.boundary2 = self.boundary1 +\
         #     self.cell_size * self.cell_size * self.boxes_per_cell
         self.sess = tf.Session()

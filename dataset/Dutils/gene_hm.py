@@ -82,7 +82,7 @@ def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_
     label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
     b_bbox_resize = b_bbox # * 64 / 256
     b_bbox_resize_4 = np.reshape(b_bbox_resize, (batch_size, -1, 4))
-    b_bbox_resize_4 = b_bbox_resize_4.astype(np.int32)
+    # b_bbox_resize_4 = b_bbox_resize_4.astype(np.int32)
     if if_gauss:
         for i in range(batch_size):
             pic_num_points_inbox = b_num_points_inbox[i] # yizhang tupian zhong meige kuang duiying de dian de geshu
@@ -95,10 +95,11 @@ def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_
                 # meidian jiang kuangzhong de xiangsu zhiwei -1
                 if obj_c_id == 1 and not num_points_inbox:
                     no_points_bbox = pic_bbox[i_p]
-                    x_min = no_points_bbox[0]
-                    y_min = no_points_bbox[1]
-                    x_max = no_points_bbox[2]
-                    y_max = no_points_bbox[3]
+                    x_min = math.floor(no_points_bbox[0])
+                    y_min = math.floor(no_points_bbox[1])
+                    x_max = math.ceil(no_points_bbox[2]) + 1
+                    y_max = math.ceil(no_points_bbox[3]) + 1
+                    # print(x_min, x_max, y_min, y_max)
                     width = x_max - x_min
                     height = y_max - y_min
                     if width > 0 and height > 0:
@@ -112,7 +113,7 @@ def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_
     else:
         for i in range(batch_size):
             label[i] = one_point_hm(HM_HEIGHT, HM_WIDTH, re_label[i]) + one_point_hm(HM_HEIGHT, HM_WIDTH,
-                                                                                     re_label[i + nPoints])
+                                                                                     re_label[i + COCO_NPOINTS])
     return label
 
 # joints=np.array([[[1,1],[15.6,15]]])
