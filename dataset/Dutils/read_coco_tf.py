@@ -41,6 +41,39 @@ def _read_single_sample(samples_dir):
     # print(label)
 
 
+def _read_single_sample_all_categories(samples_dir):
+    ab_dir = []
+    for tr_path in os.listdir(samples_dir):
+        ab_dir.append(os.path.join(samples_dir, tr_path))
+    filename_quene = tf.train.string_input_producer(ab_dir)
+    reader = tf.TFRecordReader()
+    _, serialize_example = reader.read(filename_quene)
+    features = tf.parse_single_example(
+        serialize_example,
+        features={
+            'image/height': tf.FixedLenFeature([], tf.int64),
+            'image/width': tf.FixedLenFeature([], tf.int64),
+            'image/encoded': tf.FixedLenFeature([], tf.string),
+            'image/object/bboxes': tf.FixedLenFeature([MAX * 4], tf.float32),
+            'image/object/keypoints': tf.FixedLenFeature([MAX * cfg.COCO_NPOINTS * 3], tf.int64),
+            'image/object/category_id': tf.FixedLenFeature([MAX], tf.int64),
+            'image/object/num_keypoints': tf.FixedLenFeature([MAX], tf.int64)
+        }
+    )
+    width = tf.cast(features['image/width'], tf.int32)
+    height = tf.cast(features['image/height'], tf.int32)
+    image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
+    image = tf.reshape(image, [height, width, 3])  # ！reshape 先列后行
+    xxyy = tf.cast(features['image/object/bboxes'], tf.float32)
+    keypoints = tf.cast(features['image/object/keypoints'], tf.int32)
+    category_id = tf.cast(features['image/object/category_id'], tf.int32)
+    num_keypoints = tf.cast(features['image/object/num_keypoints'], tf.int32)
+    return image, keypoints, width, height, xxyy, category_id, num_keypoints
+    # return image, (width, height), (keypoints, num_keypoints), (xxyy, category_id)
+    # print(img.shape)
+    # print(label)
+
+
 def resize_img_label(image, label, width, height, gt_bbox):
     new_img = tf.image.resize_images(image, [256, 256], method=1)
     x = tf.reshape(label[:, 0] * 256. / tf.cast(width, tf.float32), (-1, 1))
@@ -79,6 +112,37 @@ def batch_samples(batch_size, filename, shuffle=False):
 
     return b_image, b_bbox, b_label
 
+
+def batch_samples_all_categories(batch_size, filename, shuffle=False):
+    """
+    filename:tfrecord文件名
+    """
+
+    image, label, width, height, bbox, category_id, num_keypoints = \
+        _read_single_sample_all_categories(filename)
+
+    label = tf.cast(tf.reshape(label, [-1, 3]), tf.float32)
+    bbox = tf.cast(tf.reshape(bbox, [-1, 2]), tf.int64)
+    # [image, label, bbox], new_width, new_height = data_enhance.do_enhance(image, label, width, height, True, bbox)
+    # image, label, bbox = resize_img_label(image, label, width, height, bbox)
+    image, label, bbox = resize_img_label(image, label, width, height, bbox)
+    # label.set_shape([cfg.COCO_NPOINTS * MAX, 2])
+    label = tf.cast(tf.reshape(label, [cfg.COCO_NPOINTS * MAX, 2]), tf.float32)
+    bbox = tf.cast(tf.reshape(bbox, (-1, 2)), tf.int64)
+
+    if shuffle:
+        b_image, b_bbox, category_id, b_label = \
+            tf.train.shuffle_batch([image, bbox, category_id, label],
+                                   batch_size,
+                                   min_after_dequeue=batch_size * 5, num_threads=2,
+                                   capacity=batch_size * 300)
+    else:
+        b_image, b_bbox, category_id, b_label = \
+            tf.train.batch([image, bbox, category_id, label], batch_size, num_threads=2)
+
+    return b_image, b_bbox, category_id, b_label
+
+
 # # # """测试加载图像"""
 import matplotlib.pyplot as plt
 import numpy as np
@@ -89,9 +153,8 @@ with tf.Session() as sess:  # 开始一个会话
     sess.run(init_op)
     # tf.local_variables_initializer().run()
 
-    b_image, b_bbox, b_label = batch_samples(1,
-                                             '/root/dataset/tfrecord/val/',
-                                             False)
+    b_image, b_bbox, category_id, b_label = \
+        batch_samples_all_categories(1, '/root/dataset/tfrecord1/val/', False)
 
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
@@ -128,8 +191,8 @@ with tf.Session() as sess:  # 开始一个会话
                                          linewidth=1,
                                          edgecolor='r',
                                          facecolor='none')
-                # rect1 = plt.Rectangle((r_bbox[j][2][0], r_bbox[j][2][1]), r_bbox[j][3][0] - r_bbox[j][2][0],
-                #                       r_bbox[j][3][1] - r_bbox[j][2][1], linewidth=1, edgecolor='r', facecolor='none')
+                    # rect1 = plt.Rectangle((r_bbox[j][2][0], r_bbox[j][2][1]), r_bbox[j][3][0] - r_bbox[j][2][0],
+                    #                       r_bbox[j][3][1] - r_bbox[j][2][1], linewidth=1, edgecolor='r', facecolor='none')
 
                     plt.gca().add_patch(rect)
                 # plt.gca().add_patch(rect1)
