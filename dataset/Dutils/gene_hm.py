@@ -4,6 +4,7 @@ import utils.config as cfg
 HM_HEIGHT = 64
 HM_WIDTH = 64
 nPoints = 16
+COCO_NPOINTS = cfg.COCO_NPOINTS
 
 
 def resize_label(label):
@@ -56,7 +57,8 @@ def generate_hm(height, width, joints, maxlenght, num_joints=0):
             r_hm[i] = np.zeros((height, width), dtype=np.float32)
         else:
             # if not (np.array_equal(joints[i], [0, 0])) :#and weight[i] == 1:
-            s = int(np.sqrt(maxlenght) * maxlenght * 10 / 4096) + 2
+            s = 3
+            # s = int(np.sqrt(maxlenght) * maxlenght * 10 / 4096) + 2
             r_hm[i] = _makeGaussian(height, width, sigma=s, center=(joints[i, 0], joints[i, 1]))
     return r_hm
 
@@ -74,16 +76,39 @@ def batch_genehm(batch_size, l, if_gauss):
     return label
 
 
-def batch_genehm_for_coco(batch_size, l, b_bbox, num_points, if_gauss=True):
+def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_id, if_gauss=True):
     re_label = resize_label(l)
-    # label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
-    label = -1 * np.ones((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
+    num_points = COCO_NPOINTS
+    label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
+    b_bbox_resize = b_bbox # * 64 / 256
+    b_bbox_resize_4 = np.reshape(b_bbox_resize, (batch_size, -1, 4))
+    b_bbox_resize_4 = b_bbox_resize_4.astype(np.int32)
     if if_gauss:
         for i in range(batch_size):
-            for i_p in range(cfg.COCO_MAX_PERSON_PER_PIC):
-                # print('bbox', b_bbox[i])
-                label[i] += generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i][i_p * num_points:i_p * num_points+num_points],
+            pic_num_points_inbox = b_num_points_inbox[i] # yizhang tupian zhong meige kuang duiying de dian de geshu
+            pic_bbox = b_bbox_resize_4[i] # yizhang tupian zhong de kuang de xinxi
+            pic_obj_c_id = b_category_id[i]
+            for i_p in range(cfg.COCO_MAX_OBJECT_PER_PIC):
+                num_points_inbox = pic_num_points_inbox[i_p]
+                obj_c_id = pic_obj_c_id[i_p]
+                # meiyou tezhengdian de feiren de wuti de kuang
+                # meidian jiang kuangzhong de xiangsu zhiwei -1
+                if obj_c_id == 1 and not num_points_inbox:
+                    no_points_bbox = pic_bbox[i_p]
+                    x_min = no_points_bbox[0]
+                    y_min = no_points_bbox[1]
+                    x_max = no_points_bbox[2]
+                    y_max = no_points_bbox[3]
+                    width = x_max - x_min
+                    height = y_max - y_min
+                    if width > 0 and height > 0:
+                        label[i, :, y_min:y_min + height, x_min:x_min + width] += -0.001
+                elif num_points_inbox: # ruguo youdian shengcheng gaosi
+                    label[i] += generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i][i_p*num_points:i_p*num_points+num_points],
                                         64, num_points)
+                else:
+                    continue
+
     else:
         for i in range(batch_size):
             label[i] = one_point_hm(HM_HEIGHT, HM_WIDTH, re_label[i]) + one_point_hm(HM_HEIGHT, HM_WIDTH,

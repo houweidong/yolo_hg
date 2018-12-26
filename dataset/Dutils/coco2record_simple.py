@@ -124,7 +124,7 @@ def create_tf_example(image,
     num_iscrowd = 0
     for object_annotations in annotations_list:
         if object_annotations['iscrowd'] == 1:
-            print("##")
+            # print("##")
             num_iscrowd += 1
             continue
         (x, y, width, height) = tuple(object_annotations['bbox'])
@@ -197,10 +197,11 @@ def _create_tf_record_from_coco_annotations(
                 .format(len(groundtruth_data['annotations'])))
             for annotation in groundtruth_data['annotations']:
                 image_id = annotation['image_id']
-                # num_keypoints = annotation['num_keypoints']
 
+                # num_keypoints = annotation['num_keypoints']
                 # if num_keypoints == 0:
                 #     continue
+
                 if image_id not in annotations_index:
                     annotations_index[image_id] = []
                 annotations_index[image_id].append(annotation)
@@ -273,16 +274,16 @@ def main(_):
     if not tf.gfile.IsDirectory(os.path.join(FLAGS.output_dir, 'val/')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.output_dir, 'val/'))
 
-    # _create_tf_record_from_coco_annotations(
-    #     FLAGS.train_annotations_file,
-    #     FLAGS.train_image_dir,
-    #     train_output_path,
-    #     num_shards=30)
     _create_tf_record_from_coco_annotations(
-        FLAGS.val_annotations_file,
-        FLAGS.val_image_dir,
-        val_output_path,
-        num_shards=1)
+        FLAGS.train_annotations_file,
+        FLAGS.train_image_dir,
+        train_output_path,
+        num_shards=10)
+    # _create_tf_record_from_coco_annotations(
+    #     FLAGS.val_annotations_file,
+    #     FLAGS.val_image_dir,
+    #     val_output_path,
+    #     num_shards=1)
 
 
 if __name__ == '__main__':
