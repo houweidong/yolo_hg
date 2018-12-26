@@ -159,6 +159,8 @@ def create_tf_example(image,
         # num_objects += 1
 
     if len(bboxes) != 0 and len(keypoints) != 0:
+        if len(num_keypoints) != len(bboxes) / 4:
+            print(len(num_keypoints), len(bboxes))
 
         non_obj = [0.0] * (cfg.COCO_MAX_OBJECT_PER_PIC * 4 - len(bboxes))
         bboxes.extend(non_obj)
@@ -167,6 +169,10 @@ def create_tf_example(image,
         keypoints.extend(non_kp)
 
         non_num_kp = [0] * (cfg.COCO_MAX_OBJECT_PER_PIC - len(num_keypoints))
+
+        non_id = [-1] * (cfg.COCO_MAX_OBJECT_PER_PIC - len(category_id))
+        category_id.extend(non_id)
+
         num_keypoints.extend(non_num_kp)
 
         feature_example_list = []
