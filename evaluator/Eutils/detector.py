@@ -93,4 +93,9 @@ class Detector(object):
         probs_filtered = probs_filtered[keep]
         classes_num_filtered = classes_num_filtered[keep]
 
-        return boxes_filtered, probs_filtered, classes_num_filtered
+        # select bboxes whose category id are 1(person)
+        mask_p = classes_num_filtered.astype(np.bool) if self.net.num_class != 1 \
+            else [True] * len(classes_num_filtered)
+        boxes_person = boxes_filtered[mask_p]
+        probs_person = probs_filtered[mask_p]
+        return boxes_person, probs_person

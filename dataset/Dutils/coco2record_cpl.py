@@ -15,8 +15,9 @@ import os
 import contextlib2
 import tensorflow as tf
 from utils import config as cfg
+from utils.logger import Logger
 
-
+log = Logger('tfrecord_info.log', level='debug')
 flags = tf.app.flags
 tf.flags.DEFINE_string('train_image_dir', '/root/dataset/train2017/',
                        'Training image directory.')
@@ -40,8 +41,6 @@ tf.flags.DEFINE_string('detection_val_annotations_file',
 tf.flags.DEFINE_string('output_dir', '/root/dataset/tfrecord1/', 'Output data directory.')
 
 FLAGS = flags.FLAGS
-
-tf.logging.set_verbosity(tf.logging.INFO)
 
 
 def int64_feature(value):
@@ -225,7 +224,7 @@ def _create_tf_record_from_coco_annotations(
         images = det_data['images']
         annotations_index = {}
 
-        tf.logging.info(
+        log.logger.info(
             'Found {:<5} groundtruth annotations. Building annotations index.'
             .format(len(det_data['annotations'])))
         for annotation in det_data['annotations']:
@@ -256,7 +255,7 @@ def _create_tf_record_from_coco_annotations(
             if image_id not in annotations_index:
                 missing_annotation_count += 1
                 annotations_index[image_id] = []
-        tf.logging.info('%d images are missing annotations.',
+        log.logger.info('%d images are missing annotations.',
                         missing_annotation_count)
 
         total_num_annotations_skipped = 0
@@ -267,7 +266,7 @@ def _create_tf_record_from_coco_annotations(
         for idx, image in enumerate(images):
 
             if idx % 100 == 0:
-                tf.logging.info('On image %d of %d', idx, len(images))
+                print('On image %d of %d', idx, len(images))
             img_id = image['id']
             if img_id in deal_img:
                 continue
@@ -275,8 +274,8 @@ def _create_tf_record_from_coco_annotations(
             annotations_dict = annotations_index[img_id]
             if not annotations_dict:
                 num += 1
-                tf.logging.info('%d th missed images.',
-                                num)
+                # log.logger.info('%d th missed images.',
+                #                 num)
                 continue
             result_dict, leng = create_tf_example(image, annotations_dict, image_dir)
             if leng > max:
@@ -296,7 +295,7 @@ def _create_tf_record_from_coco_annotations(
                 for i in range(len(tf_example)):
                     output_tfrecords[shard_idx].write(tf_example[i].SerializeToString())
 
-        tf.logging.info('Finished writing, skipped %d annotations, skipped %d crowd annotations'
+        log.logger.info('Finished writing, skipped %d annotations, skipped %d crowd annotations'
                         'max object nums is %d',
                         total_num_annotations_skipped, total_num_iscrowd, max)
 

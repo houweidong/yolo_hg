@@ -3,8 +3,8 @@ import argparse
 import numpy as np
 import utils.config as cfg
 from model.hourglass_yolo_net import HOURGLASSYOLONet
-from evaluator.coco_val import COCO_VAL
-from evaluator.detector import Detector
+from evaluator.Eutils.pascal_val import PASCAL_VAL
+from evaluator.Eutils.detector import Detector
 from utils.logger import Logger
 from tqdm import tqdm
 
@@ -32,7 +32,7 @@ class EVALUATOR(object):
             img_batch, bbox_batch = self.data.get_batch()
             results = self.detector.detect_batch(img_batch)
             for ii in range(len(results)):
-                boxes_filtered, probs_filtered, _ = results[ii]
+                boxes_filtered, probs_filtered = results[ii]
                 # bbox_gt = bbox_batch[ii]['bbox_det']['bboxes']
                 # filter_mat_probs = np.array(probs_filtered >= cfg.THRESHOLD, dtype='bool')
                 # filter_mat_probs = np.nonzero(filter_mat_probs)
@@ -159,7 +159,8 @@ def main():
     net = HOURGLASSYOLONet('eval')
     detector = Detector(net, os.path.join(args.weight_dir, args.weights))
 
-    data = COCO_VAL()
+    # data = COCO_VAL()
+    data = PASCAL_VAL()
     evaluator = EVALUATOR(detector, data)
     ap = evaluator.eval()
     log = Logger('eval_results.log', level='debug')

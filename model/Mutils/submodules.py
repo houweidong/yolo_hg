@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
+
 def batch_norm(input_images):
     # Batch Normalization批归一化
     # ((x-mean)/var)*gamma+beta

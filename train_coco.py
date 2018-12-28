@@ -12,20 +12,21 @@ class Solver(object):
 
     def __init__(self, net, data):
         # self.lw = lw
-        self.train_sp = cfg.TRAIN_OP
+        self.train_mode = cfg.TRAIN_MODE
+        self.restore_mode = cfg.RESTORE_MODE
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
         self.net = net
         self.data = data
         self.weights_file = cfg.WEIGHTS_FILE
-        self.max_iter = cfg.COCO_MAX_ITER
+        self.max_iter = cfg.MAX_ITER
 
-        self.initial_learning_rate = cfg.COCO_LEARNING_RATE
-        self.decay_steps = cfg.COCO_DECAY_STEPS
-        self.decay_rate = cfg.COCO_DECAY_RATE
-        self.staircase = cfg.COCO_STAIRCASE
+        self.initial_learning_rate = cfg.LEARNING_RATE
+        self.decay_steps = cfg.DECAY_STEPS
+        self.decay_rate = cfg.DECAY_RATE
+        self.staircase = cfg.STAIRCASE
 
-        self.summary_iter = cfg.COCO_SUMMARY_ITER
-        self.save_iter = cfg.COCO_SAVE_ITER
+        self.summary_iter = cfg.SUMMARY_ITER
+        self.save_iter = cfg.SAVE_ITER
         if cfg.OUTPUT_DIR_TASK:
             self.output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.OUTPUT_DIR_TASK)
         else:
@@ -35,7 +36,11 @@ class Solver(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
+        # when load model and restore mode is scope, decide which parameters need to exclude(not load)
+        # has no use now, because restore mode always is all
         self.cp_ec_scopes = cfg.CHECKPOINT_EXCLUDE_SCOPES
+        # when train in scope mode, decide which part parameters train, which part not train
+        # not support now, because train mode always is all
         self.train_scopes = cfg.TRAINABLE_SCOPES
         self.save_cfg()
 
@@ -45,7 +50,6 @@ class Solver(object):
 
         self.summary_op = tf.summary.merge_all('train')
         self.summary_op_val = tf.summary.merge_all('val')
-        # self.summary_yolo_op = tf.summary.merge_all('yolo_loss')
 
         self.writer = tf.summary.FileWriter(self.output_dir, flush_secs=60)
 
@@ -53,12 +57,7 @@ class Solver(object):
         self.learning_rate = tf.train.exponential_decay(
             self.initial_learning_rate, self.global_step, self.decay_steps,
             self.decay_rate, self.staircase, name='learning_rate')
-        # self.optimizer = tf.train.GradientDescentOptimizer(
-        #      learning_rate=self.learning_rate)
-        # self.optimizer = tf.train.MomentumOptimizer(self.learning_rate, 0.9)
         self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
-        # self.train_op = slim.learning.create_train_op(
-        #    self.net.loss, self.optimizer, global_step=self.global_step)\
         self.train_op = self.optimizer.minimize(self.net.loss,
                                                 self.global_step,
                                                 self.get_trainable_variables())
@@ -187,9 +186,9 @@ class Solver(object):
 
     def get_trainable_variables(self):
         variables_to_train = []
-        if self.train_sp == "all":
+        if self.train_mode == "all":
+            print("train all parameters")
             variables_to_train = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-            print("TRAIN ALL VAR")
         # elif self.train_sp == "sp" and self.add_yolo_position == "middle":
         #     print("TRAIN SCOPE VAR")
         #     for sp in self.train_scopes:
@@ -204,31 +203,17 @@ class Solver(object):
         return list(set(variables_to_train))
 
     def restore(self):
-        if self.train_sp == 'all':
+        if self.restore_mode == 'all':
+            print('restore all parameters')
             ckpt = tf.train.get_checkpoint_state(self.weights_file)
             if ckpt and ckpt.model_checkpoint_path:
                 self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+        # always not use it, because restore_mode always is all
         else:
+            print('restore scope parameters')
             slim.assign_from_checkpoint_fn(self.weights_file,
                                            self.get_tuned_variables(),
                                            ignore_missing_vars=True)
-
-
-# def update_config_paths(data_dir, weights_file):
-#     cfg.DATA_PATH = data_dir
-#     cfg.PASCAL_PATH = os.path.join(data_dir, 'pascal_voc')
-#     cfg.CACHE_PATH = os.path.join(cfg.PASCAL_PATH, 'cache')
-#     cfg.OUTPUT_DIR = os.path.join(data_dir, 'output')
-#     cfg.WEIGHTS_DIR = os.path.join(data_dir, 'weights')
-#
-#     cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, weights_file)
-# def update_config_paths(weights_file):
-#     #cfg.DATA_PATH = data_dir
-#     #cfg.PASCAL_PATH = os.path.join(data_dir, 'pascal_voc')
-#     #cfg.CACHE_PATH = os.path.join(cfg.PASCAL_PATH, 'cache')
-#     #cfg.OUTPUT_DIR = 'output'
-#     #cfg.WEIGHTS_DIR = 'weights'
-#     cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, weights_file)
 
 
 def update_config(args):
@@ -238,6 +223,8 @@ def update_config(args):
         cfg.OUTPUT_DIR_TASK = args.log_dir
 
     cfg.ADD_YOLO_POSITION = args.position
+    cfg.TRAIN_MODE = args.train_mode
+    cfg.RESTORE_MODE = args.restore_mode
     if args.load_weights:
         # update_config_paths(args.data_dir, args.weights)
         cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, args.weights)
@@ -249,21 +236,23 @@ def update_config(args):
     cfg.CELL_SIZE = args.csize
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
-    print("LOSS_FACTOR:{}  OB_SC:{}  "
-          "NOOB_SC:{}  COO_SC:{}  CL__SC:{}".
+    print("LOSS_FACTOR:{}  OB_SC: {}  "
+          "NOOB_SC: {}  COO_SC: {}  CL__SC: {}".
           format(args.factor, args.ob_f, args.noob_f, args.coo_f, args.cl_f))
-    print("LR: {}".format(cfg.COCO_LEARNING_RATE))
+    print("LR: {}".format(cfg.LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
+    parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--position', default="tail", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--train_op', default="all", type=str, choices=["all", "sp"])
-    parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
+    parser.add_argument('--train_mode', default="all", type=str, choices=["all", "scope"])
+    parser.add_argument('--restore_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('--factor', default=0.3, type=float)
@@ -275,7 +264,7 @@ def main():
     args = parser.parse_args()
 
     update_config(args)
-    hg_yolo = HOURGLASSYOLONet('train')
+    hg_yolo = HOURGLASSYOLONet('train', args.focal_loss)
     dataset = Coco()
     solver = Solver(hg_yolo, dataset)
 
@@ -285,5 +274,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # python train.py --weights YOLO_small.ckpt --gpu 0
+    # python train_coco.py  --gpu 0 --log_dir test
     main()

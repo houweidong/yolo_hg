@@ -5,10 +5,10 @@ import os
 
 
 """加载一个batchsize的image"""
-WIDTH = 256
-HEIGHT = 256
-HM_HEIGHT = 64
-HM_WIDTH = 64
+WIDTH = cfg.WIDTH
+HEIGHT = cfg.HEIGHT
+HM_HEIGHT = cfg.HM_HEIGHT
+HM_WIDTH = cfg.HM_WIDTH
 MAX_OBJECT = cfg.COCO_MAX_OBJECT_PER_PIC
 # MAX = cfg.COCO_MAX_PERSON_PER_PIC
 
@@ -77,13 +77,13 @@ def _read_single_sample_all_categories(samples_dir):
 
 
 def resize_img_label(image, label, width, height, gt_bbox):
-    new_img = tf.image.resize_images(image, [256, 256], method=1)
-    x = tf.reshape(label[:, 0] * 256. / tf.cast(width, tf.float32), (-1, 1))
-    y = tf.reshape(label[:, 1] * 256. / tf.cast(height, tf.float32), (-1, 1))
+    new_img = tf.image.resize_images(image, [WIDTH, HEIGHT], method=1)
+    x = tf.reshape(label[:, 0] * float(WIDTH) / tf.cast(width, tf.float32), (-1, 1))
+    y = tf.reshape(label[:, 1] * float(HEIGHT) / tf.cast(height, tf.float32), (-1, 1))
     re_label = tf.concat([x, y], axis=1)
     gt_bbox = tf.cast(gt_bbox, tf.float32)
-    b_x = tf.reshape(gt_bbox[:, 0] * 256. / tf.cast(width, tf.float32), (-1, 1))
-    b_y = tf.reshape(gt_bbox[:, 1] * 256. / tf.cast(height, tf.float32), (-1, 1))
+    b_x = tf.reshape(gt_bbox[:, 0] * float(WIDTH) / tf.cast(width, tf.float32), (-1, 1))
+    b_y = tf.reshape(gt_bbox[:, 1] * float(HEIGHT) / tf.cast(height, tf.float32), (-1, 1))
     re_bbox = tf.concat([b_x, b_y], axis=1)
 
     return new_img, re_label, re_bbox

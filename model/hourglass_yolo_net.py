@@ -6,7 +6,10 @@ from model.Mutils import submodules
 
 class HOURGLASSYOLONet(object):
 
-    def __init__(self, train_eval_visual='train'):
+    def __init__(self, train_eval_visual='train', focal_loss=False):
+        self.focal_loss = focal_loss
+        self.r_object = cfg.R_OBJECT
+        # self.alpha_object = 5.0
         self.loss_factor = cfg.LOSS_FACTOR
         self.nMoudel = cfg.NUM_MOUDEL  # hourglass 中residual 模块的数量
         self.nStack = cfg.NUM_STACK  # hourglass 堆叠的层数
@@ -273,24 +276,44 @@ class HOURGLASSYOLONet(object):
                     tf.reduce_sum(tf.square(class_delta), axis=[1, 2, 3]),
                     name='class_loss') * self.class_scale
 
-            # object_loss
-            object_delta = object_mask * (predict_scales - iou_predict_truth)
-            object_loss = tf.reduce_mean(
-                tf.reduce_sum(tf.square(object_delta), axis=[1, 2, 3]),
-                name='object_loss') * self.object_scale
+            if not self.focal_loss:
+                # object_loss
+                object_delta = object_mask * (predict_scales - iou_predict_truth)
+                object_loss = tf.reduce_mean(
+                    tf.reduce_sum(tf.square(object_delta), axis=[1, 2, 3]),
+                    name='object_loss') * self.object_scale
 
-            # noobject_loss
-            noobject_delta = noobject_mask * predict_scales
-            noobject_loss = tf.reduce_mean(
-                tf.reduce_sum(tf.square(noobject_delta), axis=[1, 2, 3]),
-                name='noobject_loss') * self.noobject_scale
+                # noobject_loss
+                noobject_delta = noobject_mask * predict_scales
+                noobject_loss = tf.reduce_mean(
+                    tf.reduce_sum(tf.square(noobject_delta), axis=[1, 2, 3]),
+                    name='noobject_loss') * self.noobject_scale
+            else:  # focal loss
+                object_sigmoid = tf.sigmoid(predict_scales)
+                noobject_sigmoid = tf.ones_like(
+                    object_sigmoid, dtype=tf.float32) - object_sigmoid
 
+                object_pow_r = tf.pow(noobject_sigmoid, self.r_object)
+                noobject_pow_r = tf.pow(object_sigmoid, self.r_object)
+
+                object_delta = object_mask * tf.log(
+                    tf.clip_by_value(object_sigmoid, 1e-8, 1.0)) * object_pow_r * -1
+                noobject_delta = noobject_mask * tf.log(
+                    tf.clip_by_value(noobject_sigmoid, 1e-8, 1.0)) * noobject_pow_r * -1
+
+                object_loss = tf.reduce_mean(
+                    tf.reduce_sum(object_delta, axis=[1, 2, 3]),
+                    name='object_loss') * self.object_scale
+                noobject_loss = tf.reduce_mean(
+                    tf.reduce_sum(noobject_delta, axis=[1, 2, 3]),
+                    name='object_loss') * self.noobject_scale
             # coord_loss
             coord_mask = tf.expand_dims(object_mask, 4)
             boxes_delta = coord_mask * (predict_boxes - boxes_tran)
             coord_loss = tf.reduce_mean(
                 tf.reduce_sum(tf.square(boxes_delta), axis=[1, 2, 3, 4]),
                 name='coord_loss') * self.coord_scale
+
             yolo_loss = class_loss + object_loss + noobject_loss + coord_loss
 
             area_mask = tf.cast(tf.greater_equal(labels_kp, 0.0), tf.float32)

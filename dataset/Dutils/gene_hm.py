@@ -1,8 +1,8 @@
 import numpy as np
 import math
 import utils.config as cfg
-HM_HEIGHT = 64
-HM_WIDTH = 64
+HM_HEIGHT = cfg.HM_HEIGHT
+HM_WIDTH = cfg.HM_WIDTH
 nPoints = 16
 COCO_NPOINTS = cfg.COCO_NPOINTS
 
