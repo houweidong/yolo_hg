@@ -21,10 +21,10 @@ COCO_MAX_OBJECT_PER_PIC = 100
 COCO_EXAMPLES = 117266
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
-COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
-COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
-# COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
-# COCO_VAL_FILENAME = '/home/new/dataset/tfrecord1/val/'
+# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
+# COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
+COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
+COCO_VAL_FILENAME = '/home/new/dataset/tfrecord1/val/'
 # ------------------------------------------------------------
 
 
