@@ -78,6 +78,8 @@ class Coco(object):
             label = np.zeros((self.cell_size, self.cell_size, label_ch))
             for obj, cg in zip(l_det, l_cg):
                 if np.array_equal(obj, [256, 0, 256, 0]) or np.array_equal(obj, [0, 0, 0, 0]):
+                    # print('guolvdiao')
+                    # print(obj)
                     continue
                 x1 = max(min(obj[0], self.image_size - 1), 0)
                 y1 = max(min(obj[1], self.image_size - 1), 0)

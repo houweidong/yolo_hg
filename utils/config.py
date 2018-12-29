@@ -12,8 +12,8 @@ PASCAL_CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
                   'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
                   'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
                   'train', 'tvmonitor']
-COCO_CLASSES = ['noperson', 'person']
-# COCO_CLASSES = ['person']
+# COCO_CLASSES = ['noperson', 'person']
+COCO_CLASSES = ['person']
 
 # coco parameter
 COCO_MAX_PERSON_PER_PIC = 13
@@ -66,7 +66,7 @@ NUM_FEATS = 256  # hourglass 中特征图的数量
 # ------------------------------------------------------------
 # solver parameter
 GPU = '0'
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 2.5e-4
 DECAY_STEPS = 10000
 DECAY_RATE = 1
 STAIRCASE = True

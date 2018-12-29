@@ -45,7 +45,7 @@ class HOURGLASSYOLONet(object):
         else:
             self.batch_size = 1
         self.images = tf.placeholder(
-            tf.float32, [self.batch_size, self.image_size, self.image_size, 3],
+            tf.float32, [None, self.image_size, self.image_size, 3],
             name='images')
 
         self.hg_logits, self.yolo_logits = self.build_network()

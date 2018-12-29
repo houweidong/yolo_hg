@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-
+from utils import config as cfg
 
 def batch_norm(input_images):
     # Batch Normalization批归一化
@@ -171,12 +171,13 @@ def global_average_pooling(x):
                          [1, x.shape[1], x.shape[2], 1],
                          [1, x.shape[1], x.shape[2], 1],
                          'VALID')
-    return tf.reshape(gap, [gap.shape[0], -1])
+    return tf.reshape(gap, [-1, x.shape[3]])
 
 
 def tail(r_lin, csize_ch):
     ch, _ = csize_ch
-    batch, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    # batch, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
     return conv2(r_lin,
                  1,
                  [1, 1, 1, 1],
@@ -186,8 +187,9 @@ def tail(r_lin, csize_ch):
 
 def tail_tsp(r_lin, csize_ch):
     ch, _ = csize_ch
-    shape = r_lin.get_shape().as_list()
-    batch, r_lin_csize, r_lin_ch = shape[0], shape[1], shape[3]
+    # shape = r_lin.get_shape().as_list()
+    # batch, r_lin_csize, r_lin_ch = shape[0], shape[1], shape[3]
+    r_lin_csize, r_lin_ch = cfg.IMAGE_SIZE // 4, 256
     r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
     r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
     # print(r_lin_ch // 2)
@@ -201,8 +203,9 @@ def tail_tsp(r_lin, csize_ch):
 
 def tail_tsp_self(r_lin, csize_ch):
     ch, _ = csize_ch
-    shape = r_lin.get_shape().as_list()
-    batch, r_lin_csize, r_lin_ch = shape[0], shape[1], shape[3]
+    # shape = r_lin.get_shape().as_list()
+    # batch, r_lin_csize, r_lin_ch = shape[0], shape[1], shape[3]
+    r_lin_csize, r_lin_ch = cfg.IMAGE_SIZE // 4, 256
     r_lin_x = tf.transpose(r_lin, perm=[0, 3, 2, 1])
     r_lin_y = tf.transpose(r_lin, perm=[0, 1, 3, 2])
     x_conv = conv2(r_lin_x, 3, [1, 4, 1, 1], r_lin_csize, r_lin_ch // 2)
@@ -216,7 +219,8 @@ def tail_tsp_self(r_lin, csize_ch):
 
 def tail_conv(r_lin, csize_ch):
     ch, _ = csize_ch
-    _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
     conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch)
     conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch)
     conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
@@ -226,7 +230,8 @@ def tail_conv(r_lin, csize_ch):
 
 def tail_conv_deep(r_lin, csize_ch):
     ch, _ = csize_ch
-    _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
     conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
     conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2)
     conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2)
@@ -236,7 +241,8 @@ def tail_conv_deep(r_lin, csize_ch):
 
 def tail_conv_deep_fc(r_lin, csize_ch):
     ch, cell_size = csize_ch
-    batch, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    # batch, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
     with tf.name_scope('tail_residual1'):
         r1 = bottleneck_residual(r_lin, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2)
     with tf.name_scope('tail_down_sampling1'):
@@ -249,4 +255,4 @@ def tail_conv_deep_fc(r_lin, csize_ch):
         r1 = bottleneck_residual(ds, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4)
     max_p = global_average_pooling(r1)
     fc = slim.fully_connected(max_p, cell_size * cell_size * ch, activation_fn=None, scope='fc')
-    return tf.reshape(fc, [batch, cell_size, cell_size, ch])
+    return tf.reshape(fc, [-1, cell_size, cell_size, ch])

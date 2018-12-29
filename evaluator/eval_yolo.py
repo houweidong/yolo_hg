@@ -4,6 +4,7 @@ import numpy as np
 import utils.config as cfg
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from evaluator.Eutils.pascal_val import PASCAL_VAL
+from evaluator.Eutils.coco_val import COCO_VAL
 from evaluator.Eutils.detector import Detector
 from utils.logger import Logger
 from tqdm import tqdm
@@ -141,11 +142,11 @@ class EVALUATOR(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail_conv", type=str,
+    parser.add_argument('--position', default="tail", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
     parser.add_argument('--weights', default="hg_yolo-480000", type=str)
-    parser.add_argument('--weight_dir', default='../log/20_1_80_conv', type=str)
+    parser.add_argument('--weight_dir', default='../log/ceshi', type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     args = parser.parse_args()
@@ -159,8 +160,8 @@ def main():
     net = HOURGLASSYOLONet('eval')
     detector = Detector(net, os.path.join(args.weight_dir, args.weights))
 
-    # data = COCO_VAL()
-    data = PASCAL_VAL()
+    data = COCO_VAL()
+    # data = PASCAL_VAL()
     evaluator = EVALUATOR(detector, data)
     ap = evaluator.eval()
     log = Logger('eval_results.log', level='debug')

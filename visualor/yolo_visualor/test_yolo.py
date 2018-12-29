@@ -10,7 +10,8 @@ from utils.timer import Timer
 
 class Detector(object):
 
-    def __init__(self, net, weight_file):
+    def __init__(self, net, weight_file, fc=False):
+        self.fc = fc
         self.net = net
         self.weights_file = weight_file
         # self.classes = cfg.COCO_CLASSES
@@ -36,8 +37,8 @@ class Detector(object):
     def draw_result(self, img, result):
         for i in range(len(result)):
             # print(result[i][0])
-            # if result[i][0] != 'cat':
-            #    continue
+            # if result[i][0] != 'person':
+            #     continue
             x = int(result[i][1])
             y = int(result[i][2])
             w = int(result[i][3] / 2)
@@ -89,6 +90,8 @@ class Detector(object):
         # else:
         #     class_probs = np.ones((self.cell_size, self.cell_size, self.num_class))
         scales = output[:, :, self.net.boundary1:self.net.boundary2]
+        if self.fc:
+            scales = 1 / (1 + np.exp(-scales))
         boxes = np.reshape(
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
@@ -165,9 +168,9 @@ class Detector(object):
 
     def iou(self, box1, box2):
         tb = min(box1[0] + 0.5 * box1[2], box2[0] + 0.5 * box2[2]) - \
-            max(box1[0] - 0.5 * box1[2], box2[0] - 0.5 * box2[2])
+             max(box1[0] - 0.5 * box1[2], box2[0] - 0.5 * box2[2])
         lr = min(box1[1] + 0.5 * box1[3], box2[1] + 0.5 * box2[3]) - \
-            max(box1[1] - 0.5 * box1[3], box2[1] - 0.5 * box2[3])
+             max(box1[1] - 0.5 * box1[3], box2[1] - 0.5 * box2[3])
         inter = 0 if tb < 0 or lr < 0 else tb * lr
         return inter / (box1[2] * box1[3] + box2[2] * box2[3] - inter)
 
@@ -217,8 +220,8 @@ class Detector(object):
             detect_timer.tic()
             result = self.detect(image)
             detect_timer.toc()
-            if len(result) == 0:
-                continue
+            # if len(result) == 0:
+            #     continue
 
             self.draw_result(image, result)
             cv2.imshow('Image', image)
@@ -231,11 +234,13 @@ class Detector(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail", type=str,
+    parser.add_argument('--position', default="tail_conv_deep_fc", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
                                  "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--weights', default="hg_yolo-570000", type=str)
-    parser.add_argument('--weight_dir', default='../../log/20_1_80_tail', type=str)
+    parser.add_argument('--csize', default=7, type=int)
+    parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
+    parser.add_argument('--weights', default="hg_yolo-150000", type=str)
+    parser.add_argument('--weight_dir', default='../../log/ceshi', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -245,12 +250,10 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-
     cfg.ADD_YOLO_POSITION = args.position
+    cfg.CELL_SIZE = args.csize
     yolo = HOURGLASSYOLONet('visual')
-    weight_file = os.path.join(args.weight_dir, args.weights)
-    print(weight_file)
-    detector = Detector(yolo, weight_file)
+    detector = Detector(yolo, os.path.join(args.weight_dir, args.weights), args.focal_loss)
 
     # detect from camera
     # cap = cv2.VideoCapture(-1)
@@ -258,6 +261,7 @@ def main():
 
     # detect from image file
     ims_pth = "/root/dataset/val2017"
+    # ims_pth = "../pictures"
     # ims_pth = "../pictures1/"
     imname = 'pictures/2.jpg'
     detector.images_detector(ims_pth)
