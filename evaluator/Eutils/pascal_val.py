@@ -30,8 +30,9 @@ class PASCAL_VAL(object):
             bbox_batch = self.bbox_mat[self.cursor:]
             self.cursor = self.annotations_size
         else:
-            image_batch = None
-            bbox_batch = None
+            # start another epoch
+            self.cursor = 0
+            image_batch, bbox_batch = self.get_batch()
         return image_batch, bbox_batch
 
     def prepare_data(self):
@@ -47,6 +48,8 @@ class PASCAL_VAL(object):
         num_anno_no_person = 0
         num_gt = 0
         for index in image_index:
+            # if num_gt > 80:
+            #     break
             # read det label
             bboxes, gt = self.load_pascal_annotation(index)
             num_gt += gt

@@ -6,8 +6,8 @@ from model.Mutils import submodules
 
 class HOURGLASSYOLONet(object):
 
-    def __init__(self, train_eval_visual='train', focal_loss=False):
-        self.focal_loss = focal_loss
+    def __init__(self, train_eval_visual='train'):
+        self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.r_object = cfg.R_OBJECT
         # self.alpha_object = 5.0
         self.loss_factor = cfg.LOSS_FACTOR
@@ -258,8 +258,9 @@ class HOURGLASSYOLONet(object):
                 (iou_predict_truth >= object_mask), tf.float32) * response
 
             # calculate no_I tensor [CELL_SIZE, CELL_SIZE, BOXES_PER_CELL]
-            noobject_mask = tf.ones_like(
-                object_mask, dtype=tf.float32) - object_mask
+            noobject_mask = tf.cast(tf.equal(object_mask, 0.0), tf.float32)
+            # noobject_mask = tf.ones_like(
+            #     object_mask, dtype=tf.float32) - object_mask
 
             boxes_tran = tf.stack(
                 [boxes[..., 0] * self.cell_size - offset,

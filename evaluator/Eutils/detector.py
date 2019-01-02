@@ -5,12 +5,13 @@ from evaluator.Eutils.nms import py_cpu_nms
 
 class Detector(object):
 
-    def __init__(self, net, weight_file):
+    def __init__(self, net, weight_file, values):
+        self.focal_loss = values['BOX_FOCAL_LOSS']
         self.net = net
         self.weights_file = weight_file
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
-
+        # tf.reset_default_graph()
         print('Restoring weights from: ' + self.weights_file)
         self.saver = tf.train.Saver()
         self.saver.restore(self.sess, self.weights_file)
@@ -40,6 +41,15 @@ class Detector(object):
             else np.ones((self.net.cell_size, self.net.cell_size, 1))
 
         scales = output[:, :, self.net.boundary1:self.net.boundary2]
+        if self.focal_loss:
+            # if inx >= 0:  # 对sigmoid函数的优化，避免了出现极大的数据溢出
+            #     return 1.0 / (1 + exp(-inx))
+            # else:
+            #     return exp(inx) / (1 + exp(inx))
+            # scales = 1 / (1 + np.exp(-scales))
+            scales = np.clip(scales, -50, 50)
+            scales = 1 / (1 + np.exp(-scales))
+
         boxes = np.reshape(
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))

@@ -6,12 +6,12 @@ import tensorflow as tf
 from utils import config as cfg
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from utils.timer import Timer
-
+import collections
 
 class Detector(object):
 
-    def __init__(self, net, weight_file, fc=False):
-        self.fc = fc
+    def __init__(self, net, weight_file, values):
+        self.fc = values['BOX_FOCAL_LOSS']
         self.net = net
         self.weights_file = weight_file
         # self.classes = cfg.COCO_CLASSES
@@ -232,15 +232,36 @@ class Detector(object):
         # cv2.waitKey(wait)
 
 
+def get_config(config_path):
+    config = os.path.join(config_path, 'config.txt')
+    values = collections.OrderedDict()
+    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE', 'OBJECT_SCALE',
+            'NOOBJECT_SCALE', 'COORD_SCALE', 'BOX_FOCAL_LOSS']
+    values = values.fromkeys(keys)
+    for line in open(config):
+        name, value = line.split(': ')[0], line.split(': ')[1]
+        if name in keys:
+            values[name] = value.strip()
+    cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
+    if 'fc' in config_path:
+        values['BOX_FOCAL_LOSS'] = True
+    else:
+        values['BOX_FOCAL_LOSS'] = False
+    strings = ''
+    for i, value in values.items():
+        strings += '{}:{}  '.format(i, value)
+    return values, strings
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail_conv_deep_fc", type=str,
-                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
-                                 "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--csize', default=7, type=int)
-    parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-150000", type=str)
-    parser.add_argument('--weight_dir', default='../../log/ceshi', type=str)
+    # parser.add_argument('--position', default="tail_conv", type=str,
+    #                     choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+    #                              "tail_conv_deep", "tail_conv_deep_fc"])
+    # parser.add_argument('--csize', default=64, type=int)
+    # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
+    parser.add_argument('--weights', default="hg_yolo-240000", type=str)
+    parser.add_argument('--weight_dir', default='../../log/10_1_10_conv_fc/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -250,10 +271,10 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    cfg.ADD_YOLO_POSITION = args.position
-    cfg.CELL_SIZE = args.csize
+    values, strings = get_config(args.weight_dir)
+    # cfg.CELL_SIZE = args.csize
     yolo = HOURGLASSYOLONet('visual')
-    detector = Detector(yolo, os.path.join(args.weight_dir, args.weights), args.focal_loss)
+    detector = Detector(yolo, os.path.join(args.weight_dir, args.weights), values)
 
     # detect from camera
     # cap = cv2.VideoCapture(-1)

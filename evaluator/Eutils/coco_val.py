@@ -30,8 +30,9 @@ class COCO_VAL(object):
             bbox_batch = self.bbox_mat[self.cursor:]
             self.cursor = self.annotations_size
         else:
-            image_batch = None
-            bbox_batch = None
+            # start another epoch
+            self.cursor = 0
+            image_batch, bbox_batch = self.get_batch()
         return image_batch, bbox_batch
 
     def prepare_data(self):
@@ -63,7 +64,7 @@ class COCO_VAL(object):
         num_iscrowd = 0
         gt = 0
         for image in images:
-            # if gt > 800:
+            # if gt > 80:
             #     break
             image_id = image['id']
             if image_id not in annotations_index:

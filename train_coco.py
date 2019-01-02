@@ -219,6 +219,8 @@ class Solver(object):
 def update_config(args):
     if args.gpu is not None:
         cfg.GPU = args.gpu
+    if args.cpu:
+        cfg.GPU = ''
     if args.log_dir:
         cfg.OUTPUT_DIR_TASK = args.log_dir
 
@@ -234,6 +236,9 @@ def update_config(args):
     cfg.COORD_SCALE = args.coo_f
     cfg.CLASS_SCALE = args.cl_f
     cfg.CELL_SIZE = args.csize
+    cfg.BOX_HOT_MAP = args.bbox_hm
+    # cfg.BOX_HOT_MAP_LEVEL = args.bhmlevel
+    cfg.BOX_FOCAL_LOSS = args.focal_loss
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  "
@@ -245,6 +250,8 @@ def update_config(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-bhm', '--bbox_hm', action='store_true', help='use focal loss')
+    parser.add_argument('--csize', default=64, type=int)
     parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
@@ -255,16 +262,16 @@ def main():
     parser.add_argument('--restore_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', type=str)
+    parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     parser.add_argument('--factor', default=0.3, type=float)
     parser.add_argument('--ob_f', default=20.0, type=float)
     parser.add_argument('--noob_f', default=1.0, type=float)
     parser.add_argument('--coo_f', default=100.0, type=float)
     parser.add_argument('--cl_f', default=40.0, type=float)
-    parser.add_argument('--csize', default=64, type=int)
     args = parser.parse_args()
 
     update_config(args)
-    hg_yolo = HOURGLASSYOLONet('train', args.focal_loss)
+    hg_yolo = HOURGLASSYOLONet('train')
     dataset = Coco()
     solver = Solver(hg_yolo, dataset)
 

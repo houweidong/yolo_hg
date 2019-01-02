@@ -8,6 +8,9 @@ from evaluator.Eutils.coco_val import COCO_VAL
 from evaluator.Eutils.detector import Detector
 from utils.logger import Logger
 from tqdm import tqdm
+import collections
+import tensorflow as tf
+import copy
 
 
 # import cv2
@@ -21,7 +24,7 @@ class EVALUATOR(object):
         self.data = data
         self.gt = self.data.gt
         self.image_ids, self.bboxes, \
-            self.prob, self.annotations = self.prepare()
+        self.prob, self.annotations = self.prepare()
         self.precision, self.recall = self.pr_curve()
 
     def prepare(self):
@@ -48,7 +51,7 @@ class EVALUATOR(object):
                 bboxes.extend(boxes_filtered)
                 prob.extend(probs_filtered)
                 if bbox_batch[ii]['id'] not in annotations:
-                    annotations[bbox_batch[ii]['id']] = bbox_batch[ii]['bbox_det']
+                    annotations[bbox_batch[ii]['id']] = copy.deepcopy(bbox_batch[ii]['bbox_det'])
         sorted_ind = np.argsort(prob)[::-1]
         sorted_prob = np.sort(prob)[::-1]
         BB = np.array(bboxes)
@@ -140,36 +143,85 @@ class EVALUATOR(object):
         return ap
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--position', default="tail", type=str,
-                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
-                                 "tail_conv_deep", "tail_conv_deep_fc"])
-    parser.add_argument('--weights', default="hg_yolo-480000", type=str)
-    parser.add_argument('--weight_dir', default='../log/ceshi', type=str)
-    parser.add_argument('--gpu', type=str)
-    parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
-    args = parser.parse_args()
+def get_config(config_path):
+    config = os.path.join(config_path, 'config.txt')
+    values = collections.OrderedDict()
+    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE', 'OBJECT_SCALE',
+            'NOOBJECT_SCALE', 'COORD_SCALE', 'BOX_FOCAL_LOSS']
+    values = values.fromkeys(keys)
+    for line in open(config):
+        name, value = line.split(': ')[0], line.split(': ')[1]
+        if name in keys:
+            values[name] = value.strip()
+    cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
+    if 'fc' in config_path:
+        values['BOX_FOCAL_LOSS'] = True
+    else:
+        values['BOX_FOCAL_LOSS'] = False
+    strings = ''
+    for i, value in values.items():
+        strings += '{}:{}  '.format(i, value)
+    return values, strings
 
-    if args.gpu:
-        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    if args.cpu:
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-    cfg.ADD_YOLO_POSITION = args.position
-    net = HOURGLASSYOLONet('eval')
-    detector = Detector(net, os.path.join(args.weight_dir, args.weights))
+def main(auto_all=False):
+    if not auto_all:
+        parser = argparse.ArgumentParser()
+        # parser.add_argument('--position', default="tail", type=str,
+        #                     choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+        #                              "tail_conv_deep", "tail_conv_deep_fc"])
+        # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
+        parser.add_argument('--weights', default="hg_yolo-390000", type=str)
+        parser.add_argument('--weight_dir', default='../log/20_1_100_conv_fc', type=str)
+        parser.add_argument('--gpu', type=str)
+        parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
+        args = parser.parse_args()
+        values, strings = get_config(args.weight_dir)
+        if args.gpu:
+            os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+        if args.cpu:
+            os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-    data = COCO_VAL()
-    # data = PASCAL_VAL()
-    evaluator = EVALUATOR(detector, data)
-    ap = evaluator.eval()
-    log = Logger('eval_results.log', level='debug')
-    log.logger.info('AP: {}    Position: {}    Weights: {}'.format(
-        ap,
-        args.position,
-        args.weights))
+        # cfg.ADD_YOLO_POSITION = args.position
+        # cfg.BOX_FOCAL_LOSS = True
+        net = HOURGLASSYOLONet('eval')
+        detector = Detector(net, os.path.join(args.weight_dir, args.weights), values)
+        data = COCO_VAL()
+        # data = PASCAL_VAL()
+        evaluator = EVALUATOR(detector, data)
+        ap = evaluator.eval()
+        log = Logger('eval_results.log', level='debug')
+        log.logger.info('Data sc:{}  AP:{}  Weights:{}  {}'.format(
+            data.__class__.__name__, ap, args.weights, strings))
+    else:
+        data_coco = COCO_VAL()
+        data_pascal = PASCAL_VAL()
+        log = Logger('eval_results.log', level='debug')
+        model_start = 'hg_yolo'
+        rootdir = '../log'
+        root_list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
+        root_list.sort()
+        for path in root_list:
+            model_dir = os.path.join(rootdir, path)
+            models = os.listdir(model_dir)
+            models = filter(lambda x: x.startswith(model_start), models)
+            models = list(set(map(lambda x: x.split('.')[0], models)))
+            models.sort(key=lambda x: int(x[8:]))
+            for data in [data_coco, data_pascal]:
+                for model in models:
+                    values, strings = get_config(model_dir)
+                    tf.reset_default_graph()
+                    net = HOURGLASSYOLONet('eval')
+                    detector = Detector(net, os.path.join(model_dir, model), values)
+                    evaluator = EVALUATOR(detector, data)
+                    ap = evaluator.eval()
+                    log.logger.info('Data sc:{}  AP:{:<5.5f}  Weights:{}  {}'.format(
+                        data.__class__.__name__, ap, model, strings))
+                    detector.sess.close()
+                    del net
+                    del detector
+                    del evaluator
 
 
 if __name__ == '__main__':
-    main()
+    main(True)
