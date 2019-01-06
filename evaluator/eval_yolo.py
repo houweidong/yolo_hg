@@ -165,25 +165,19 @@ def get_config(config_path):
 
 
 def main(auto_all=False):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=str)
+    parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
+    args = parser.parse_args()
+    if args.gpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    if args.cpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
     if not auto_all:
-        parser = argparse.ArgumentParser()
-        # parser.add_argument('--position', default="tail", type=str,
-        #                     choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
-        #                              "tail_conv_deep", "tail_conv_deep_fc"])
-        # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
         parser.add_argument('--weights', default="hg_yolo-390000", type=str)
         parser.add_argument('--weight_dir', default='../log/20_1_100_conv_fc', type=str)
-        parser.add_argument('--gpu', type=str)
-        parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
-        args = parser.parse_args()
         values, strings = get_config(args.weight_dir)
-        if args.gpu:
-            os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-        if args.cpu:
-            os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-        # cfg.ADD_YOLO_POSITION = args.position
-        # cfg.BOX_FOCAL_LOSS = True
         net = HOURGLASSYOLONet('eval')
         detector = Detector(net, os.path.join(args.weight_dir, args.weights), values)
         data = COCO_VAL()
