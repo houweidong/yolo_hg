@@ -53,8 +53,8 @@ def update_config(args):
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
-          "COO_SC: {}  CL_SC: {}  L2: {}  L2_F: {}".
+          "COO_SC: {}  CL_SC: {}  BHP: {}  L2: {}  L2_F: {}".
           format(args.factor, args.ob_f, args.noob_f, args.coo_f,
-                 args.cl_f, args.l2_regularization, args.l2_factor))
+                 args.cl_f, args.bbox_hm, args.l2_regularization, args.l2_factor))
     print("LR: {}".format(cfg.LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
