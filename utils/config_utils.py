@@ -19,7 +19,7 @@ def get_config(config_path):
         cfg.L2 = values['L2']
     cfg.L2_FACTOR = values['L2_FACTOR']
     cfg.BOX_FOCAL_LOSS = values['BOX_FOCAL_LOSS']
-    strings = ''
+    strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
     return strings
