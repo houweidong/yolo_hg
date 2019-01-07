@@ -171,7 +171,7 @@ def main(auto_all=False):
         data_pascal = PASCAL_VAL()
         log = Logger('eval_results.log', level='debug')
         model_start = 'hg_yolo'
-        rootdir = '../log'
+        rootdir = '../' + cfg.OUTPUT_DIR_TASK
         root_list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
         root_list.sort()
         for path in root_list:

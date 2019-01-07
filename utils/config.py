@@ -2,7 +2,7 @@ import os
 
 # ------------------------------------------------------------
 # path and dataset parameter
-OUTPUT_DIR = 'log'
+OUTPUT_DIR = 'log_l2'
 OUTPUT_DIR_TASK = None
 WEIGHTS_DIR = 'weights'
 WEIGHTS_FILE = None
