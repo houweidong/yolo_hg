@@ -3,6 +3,7 @@ import argparse
 import datetime
 import tensorflow as tf
 from utils import config as cfg
+from utils.config_utils import update_config
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from dataset.coco import Coco
 import tensorflow.contrib.slim as slim
@@ -216,40 +217,10 @@ class Solver(object):
                                            ignore_missing_vars=True)
 
 
-def update_config(args):
-    if args.gpu is not None:
-        cfg.GPU = args.gpu
-    if args.cpu:
-        cfg.GPU = ''
-    if args.log_dir:
-        cfg.OUTPUT_DIR_TASK = args.log_dir
-
-    cfg.ADD_YOLO_POSITION = args.position
-    cfg.TRAIN_MODE = args.train_mode
-    cfg.RESTORE_MODE = args.restore_mode
-    if args.load_weights:
-        # update_config_paths(args.data_dir, args.weights)
-        cfg.WEIGHTS_FILE = os.path.join(cfg.WEIGHTS_DIR, args.weights)
-    cfg.LOSS_FACTOR = args.factor
-    cfg.OBJECT_SCALE = args.ob_f
-    cfg.NOOBJECT_SCALE = args.noob_f
-    cfg.COORD_SCALE = args.coo_f
-    cfg.CLASS_SCALE = args.cl_f
-    cfg.CELL_SIZE = args.csize
-    cfg.BOX_HOT_MAP = args.bbox_hm
-    # cfg.BOX_HOT_MAP_LEVEL = args.bhmlevel
-    cfg.BOX_FOCAL_LOSS = args.focal_loss
-
-    print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
-    print("LOSS_FACTOR:{}  OB_SC: {}  "
-          "NOOB_SC: {}  COO_SC: {}  CL__SC: {}".
-          format(args.factor, args.ob_f, args.noob_f, args.coo_f, args.cl_f))
-    print("LR: {}".format(cfg.LEARNING_RATE))
-    os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU
-
-
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')
+    parser.add_argument('-l2f', '--l2_factor', default=0.1, type=float)
     parser.add_argument('-bhm', '--bbox_hm', action='store_true', help='use focal loss')
     parser.add_argument('--csize', default=64, type=int)
     parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')

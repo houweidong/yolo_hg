@@ -7,8 +7,8 @@ from evaluator.Eutils.pascal_val import PASCAL_VAL
 from evaluator.Eutils.coco_val import COCO_VAL
 from evaluator.Eutils.detector import Detector
 from utils.logger import Logger
+from utils.config_utils import get_config
 from tqdm import tqdm
-import collections
 import tensorflow as tf
 import copy
 
@@ -143,27 +143,6 @@ class EVALUATOR(object):
         return ap
 
 
-def get_config(config_path):
-    config = os.path.join(config_path, 'config.txt')
-    values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE', 'OBJECT_SCALE',
-            'NOOBJECT_SCALE', 'COORD_SCALE', 'BOX_FOCAL_LOSS']
-    values = values.fromkeys(keys)
-    for line in open(config):
-        name, value = line.split(': ')[0], line.split(': ')[1]
-        if name in keys:
-            values[name] = value.strip()
-    cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
-    if 'fc' in config_path:
-        values['BOX_FOCAL_LOSS'] = True
-    else:
-        values['BOX_FOCAL_LOSS'] = False
-    strings = ''
-    for i, value in values.items():
-        strings += '{}:{}  '.format(i, value)
-    return values, strings
-
-
 def main(auto_all=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str)
@@ -176,10 +155,10 @@ def main(auto_all=False):
     if not auto_all:
         parser.add_argument('--weights', default="hg_yolo-390000", type=str)
         parser.add_argument('--weight_dir', default='../log/20_1_100_conv_fc', type=str)
-        values, strings = get_config(args.weight_dir)
+        strings = get_config(args.weight_dir)
 
         net = HOURGLASSYOLONet('eval')
-        detector = Detector(net, os.path.join(args.weight_dir, args.weights), values)
+        detector = Detector(net, os.path.join(args.weight_dir, args.weights))
         data = COCO_VAL()
         # data = PASCAL_VAL()
         evaluator = EVALUATOR(detector, data)
@@ -203,10 +182,10 @@ def main(auto_all=False):
             models.sort(key=lambda x: int(x[8:]))
             for data in [data_coco, data_pascal]:
                 for model in models:
-                    values, strings = get_config(model_dir)
+                    strings = get_config(model_dir)
                     tf.reset_default_graph()
                     net = HOURGLASSYOLONet('eval')
-                    detector = Detector(net, os.path.join(model_dir, model), values)
+                    detector = Detector(net, os.path.join(model_dir, model))
                     evaluator = EVALUATOR(detector, data)
                     ap = evaluator.eval()
                     log.logger.info('Data sc:{}  AP:{:<5.5f}  Weights:{}  {}'.format(

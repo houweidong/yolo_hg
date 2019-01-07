@@ -4,14 +4,15 @@ import argparse
 import numpy as np
 import tensorflow as tf
 from utils import config as cfg
+from utils.config_utils import get_config
 from model.hourglass_yolo_net import HOURGLASSYOLONet
 from utils.timer import Timer
-import collections
+
 
 class Detector(object):
 
-    def __init__(self, net, weight_file, values):
-        self.fc = values['BOX_FOCAL_LOSS']
+    def __init__(self, net, weight_file):
+        self.fc = cfg.BOX_FOCAL_LOSS
         self.net = net
         self.weights_file = weight_file
         # self.classes = cfg.COCO_CLASSES
@@ -232,27 +233,6 @@ class Detector(object):
         # cv2.waitKey(wait)
 
 
-def get_config(config_path):
-    config = os.path.join(config_path, 'config.txt')
-    values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE', 'OBJECT_SCALE',
-            'NOOBJECT_SCALE', 'COORD_SCALE', 'BOX_FOCAL_LOSS']
-    values = values.fromkeys(keys)
-    for line in open(config):
-        name, value = line.split(': ')[0], line.split(': ')[1]
-        if name in keys:
-            values[name] = value.strip()
-    cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
-    if 'fc' in config_path:
-        values['BOX_FOCAL_LOSS'] = True
-    else:
-        values['BOX_FOCAL_LOSS'] = False
-    strings = ''
-    for i, value in values.items():
-        strings += '{}:{}  '.format(i, value)
-    return values, strings
-
-
 def main():
     parser = argparse.ArgumentParser()
     # parser.add_argument('--position', default="tail_conv", type=str,
@@ -271,10 +251,10 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    values, strings = get_config(args.weight_dir)
+    get_config(args.weight_dir)
     # cfg.CELL_SIZE = args.csize
     yolo = HOURGLASSYOLONet('visual')
-    detector = Detector(yolo, os.path.join(args.weight_dir, args.weights), values)
+    detector = Detector(yolo, os.path.join(args.weight_dir, args.weights))
 
     # detect from camera
     # cap = cv2.VideoCapture(-1)

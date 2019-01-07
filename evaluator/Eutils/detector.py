@@ -1,12 +1,13 @@
 import numpy as np
 import tensorflow as tf
 from evaluator.Eutils.nms import py_cpu_nms
+import utils.config as cfg
 
 
 class Detector(object):
 
-    def __init__(self, net, weight_file, values):
-        self.focal_loss = values['BOX_FOCAL_LOSS']
+    def __init__(self, net, weight_file):
+        self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.net = net
         self.weights_file = weight_file
         self.sess = tf.Session()
