@@ -7,6 +7,7 @@ from model.Mutils import submodules
 class HOURGLASSYOLONet(object):
 
     def __init__(self, train_eval_visual='train'):
+        self.l2 = tf.contrib.layers.l2_regularizer(cfg.L2_FACTOR) if cfg.L2 else None
         self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.r_object = cfg.R_OBJECT
         # self.alpha_object = 5.0
@@ -66,43 +67,44 @@ class HOURGLASSYOLONet(object):
     def build_network(self):
         # conv=conv2(input_x,7,[1,2,2,1])
         with tf.name_scope('conv_pad3'):
-            cp = pad_conv2(self.images, [[0, 0], [3, 3], [3, 3], [0, 0]], 7, [1, 2, 2, 1], 3, 64)
+            cp = pad_conv2(self.images, [[0, 0], [3, 3], [3, 3], [0, 0]], 7, [1, 2, 2, 1], 3, 64, self.l2)
         with tf.name_scope('batch_norm_relu'):
             bn = batch_norm_relu(cp)
         with tf.name_scope('residual1'):
-            r1 = bottleneck_residual(bn, [1, 1, 1, 1], 64, 128)
+            r1 = bottleneck_residual(bn, [1, 1, 1, 1], 64, 128, self.l2)
         with tf.name_scope('down_sampling'):
             ds = down_sampling(r1, [1, 2, 2, 1], [1, 2, 2, 1])
         with tf.name_scope('residual2'):
-            r2 = bottleneck_residual(ds, [1, 1, 1, 1], 128, 128)
+            r2 = bottleneck_residual(ds, [1, 1, 1, 1], 128, 128, self.l2)
         with tf.name_scope('residual3'):
-            r3 = bottleneck_residual(r2, [1, 1, 1, 1], 128, self.nFeats)
+            r3 = bottleneck_residual(r2, [1, 1, 1, 1], 128, self.nFeats, self.l2)
 
         output, yolo_output = None, None
         # hourglass 的输入
         h_input = r3
         for n in range(self.nStack):
             with tf.name_scope('hourglass' + str(n + 1)):
-                h1 = hourglass(h_input, self.nFeats, self.nMoudel, 4)
+                h1 = hourglass(h_input, self.nFeats, self.nMoudel, 4, self.l2)
             residual = h1
             for i in range(self.nMoudel):
                 with tf.name_scope('residual' + str(i + 1)):
-                    residual = bottleneck_residual(residual, [1, 1, 1, 1], self.nFeats, self.nFeats)
+                    residual = bottleneck_residual(residual, [1, 1, 1, 1], self.nFeats, self.nFeats, self.l2)
             with tf.name_scope('lin'):
-                r_lin = lin(residual, self.nFeats, self.nFeats)
+                r_lin = lin(residual, self.nFeats, self.nFeats, self.l2)
 
                 # add yolo_head in the tail of hg_net
                 if n == self.nStack - 1:
                     yolo_output = getattr(submodules,
                                           self.add_yolo_position)(r_lin,
-                                                                  (self.ch_size, self.cell_size))
+                                                                  (self.ch_size, self.cell_size),
+                                                                  self.l2)
             with tf.name_scope('conv_same'):
-                output = conv2(r_lin, 1, [1, 1, 1, 1], self.nFeats, self.nPoints, padding='VALID')  # 特征图输出
+                output = conv2(r_lin, 1, [1, 1, 1, 1], self.nFeats, self.nPoints, self.l2, padding='VALID')  # 特征图输出
             if n < (self.nStack - 1):
                 # print(n)
                 with tf.name_scope('next_input'):
                     # 卷积的输出
-                    c_output = conv2(output, 1, [1, 1, 1, 1], self.nPoints, self.nFeats)
+                    c_output = conv2(output, 1, [1, 1, 1, 1], self.nPoints, self.nFeats, self.l2)
                     h_input = tf.add(h_input, tf.add(r_lin, c_output))
         # transpose和reshape结果是不一样的
         output = tf.transpose(output, [0, 3, 1, 2], name='output')
@@ -316,12 +318,14 @@ class HOURGLASSYOLONet(object):
                 name='coord_loss') * self.coord_scale
 
             yolo_loss = class_loss + object_loss + noobject_loss + coord_loss
+            tf.add_to_collection('losses', yolo_loss)
 
             area_mask = tf.cast(tf.greater_equal(labels_kp, 0.0), tf.float32)
             diff1 = tf.subtract(hg_logits, labels_kp) * area_mask
             hg_loss = tf.reduce_mean(tf.nn.l2_loss(diff1, name='l2loss')) * self.loss_factor
-            # tf.losses.add_loss(hg_loss)
-            loss = yolo_loss + hg_loss
+            tf.add_to_collection('losses', hg_loss)
+
+            loss = tf.add_n(tf.get_collection('losses'))
 
             # summary for train and val
         name_lt = ['train', 'val']

@@ -122,7 +122,7 @@ class Coco(object):
         grid_w, grid_h = r + 1 - l, d + 1 - t
         imag_w, imag_h = xmax + 1 - xmin, ymax + 1 - ymin
         # consider image area
-        factor = 15 / np.power(imag_h * imag_w, 11 / 20)
+        factor = 1 / np.power(imag_h * imag_w, 21 / 40)
         sigma_w, sigma_h = factor * imag_w / 2, factor * imag_h / 2
 
         col = np.reshape(np.array([np.arange(grid_w)] * grid_h), (grid_h, grid_w))

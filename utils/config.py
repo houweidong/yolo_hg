@@ -30,6 +30,8 @@ COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
 
 # ------------------------------------------------------------
 # model parameter
+L2 = True
+L2_FACTOR = 0.5
 LOSS_FACTOR = 0.1
 # support middle | tail | tail_cov | tail_tsp | tail_tsp_self | tail_conv_deep | tail_conv_deep_fc
 ADD_YOLO_POSITION = "tail"
@@ -83,7 +85,7 @@ SAVE_ITER = 30000
 
 # ------------------------------------------------------------
 # test parameter
-THRESHOLD = 0.5
+THRESHOLD = 0.3
 IOU_THRESHOLD_NMS = 0.5
 IOU_THRESHOLD_GT = 0.5
 COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'

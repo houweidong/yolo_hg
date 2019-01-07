@@ -133,6 +133,9 @@ def create_tf_example(image,
     # num_objects = 0
     num_iscrowd = 0
     for object_annotations in annotations_dict.values():
+        if object_annotations['category_id'] != 1:
+            num_annotations_skipped += 1
+            continue
         if object_annotations['iscrowd'] == 1:
             # print("##")
             num_iscrowd += 1
@@ -195,9 +198,10 @@ def create_tf_example(image,
         }
         example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
         feature_example_list.append(example)
-        result_dict = {'example': feature_example_list,
-                       'num_annotations_skipped': num_annotations_skipped,
-                       'num_iscrowd': num_iscrowd}
+        result_dict['example'] = feature_example_list
+
+    result_dict['num_annotations_skipped'] = num_annotations_skipped
+    result_dict['num_iscrowd'] = num_iscrowd
     return result_dict, leng
 
 
@@ -280,16 +284,20 @@ def _create_tf_record_from_coco_annotations(
             result_dict, leng = create_tf_example(image, annotations_dict, image_dir)
             if leng > max:
                 max = leng
-            if not result_dict['example']:
+            tf_example, num_annotations_skipped, num_iscrowd \
+                = result_dict['example'], result_dict['num_annotations_skipped'], result_dict['num_iscrowd']
+            total_num_annotations_skipped += num_annotations_skipped
+            total_num_iscrowd += num_iscrowd
+            if not tf_example:
                 print('not example')
                 continue
             else:
                 # if num == 5 or num == 4:
                 #    print(num)
-                tf_example, num_annotations_skipped, num_iscrowd \
-                    = result_dict['example'], result_dict['num_annotations_skipped'], result_dict['num_iscrowd']
-                total_num_annotations_skipped += num_annotations_skipped
-                total_num_iscrowd += num_iscrowd
+                # tf_example, num_annotations_skipped, num_iscrowd \
+                #     = result_dict['example'], result_dict['num_annotations_skipped'], result_dict['num_iscrowd']
+                # total_num_annotations_skipped += num_annotations_skipped
+                # total_num_iscrowd += num_iscrowd
                 shard_idx = idx % num_shards
 
                 for i in range(len(tf_example)):
@@ -320,18 +328,18 @@ def main(_):
     if not tf.gfile.IsDirectory(os.path.join(FLAGS.output_dir, 'val/')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.output_dir, 'val/'))
 
-    # _create_tf_record_from_coco_annotations(
-    #     FLAGS.detection_train_annotations_file,
-    #     FLAGS.keypoints_train_annotations_file,
-    #     FLAGS.train_image_dir,
-    #     train_output_path,
-    #     num_shards=30)
     _create_tf_record_from_coco_annotations(
-        FLAGS.detection_val_annotations_file,
-        FLAGS.keypoints_val_annotations_file,
-        FLAGS.val_image_dir,
-        val_output_path,
-        num_shards=1)
+        FLAGS.detection_train_annotations_file,
+        FLAGS.keypoints_train_annotations_file,
+        FLAGS.train_image_dir,
+        train_output_path,
+        num_shards=30)
+    # _create_tf_record_from_coco_annotations(
+    #     FLAGS.detection_val_annotations_file,
+    #     FLAGS.keypoints_val_annotations_file,
+    #     FLAGS.val_image_dir,
+    #     val_output_path,
+    #     num_shards=1)
 
 
 if __name__ == '__main__':

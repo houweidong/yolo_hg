@@ -1,0 +1,1 @@
+--position tail_conv --ob_f 20 --noob_f 1 --coo_f 20 --log_dir ceshi -fc
