@@ -1,16 +1,18 @@
-import os
-import argparse
-import numpy as np
-import utils.config as cfg
-from model.hourglass_yolo_net import HOURGLASSYOLONet
-from evaluator.Eutils.pascal_val import PASCAL_VAL
-from evaluator.Eutils.coco_val import COCO_VAL
-from evaluator.Eutils.detector import Detector
-from utils.logger import Logger
-from utils.config_utils import get_config
-from tqdm import tqdm
-import tensorflow as tf
-import copy
+from Eutils.pathmagic import context
+with context():
+    import argparse
+    import numpy as np
+    from model.hourglass_yolo_net import HOURGLASSYOLONet
+    from evaluator.Eutils.pascal_val import PASCAL_VAL
+    from evaluator.Eutils.coco_val import COCO_VAL
+    from evaluator.Eutils.detector import Detector
+    import utils.config as cfg
+    from utils.logger import Logger
+    from utils.config_utils import get_config
+    from tqdm import tqdm
+    import tensorflow as tf
+    import copy
+    import os
 
 
 # import cv2
@@ -147,6 +149,7 @@ def main(auto_all=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
+    parser.add_argument('-ds', '--data_source', default='all', type=str, choices=['coco', 'pascal', 'all'])
     args = parser.parse_args()
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -167,11 +170,16 @@ def main(auto_all=False):
         log.logger.info('Data sc:{}  AP:{}  Weights:{}  {}'.format(
             data.__class__.__name__, ap, args.weights, strings))
     else:
-        data_coco = COCO_VAL()
-        data_pascal = PASCAL_VAL()
+        data_source = []
+        if args.data_source == 'all':
+            data_source.extend([COCO_VAL(), PASCAL_VAL()])
+        elif args.data_source == 'coco':
+            data_source.append(COCO_VAL())
+        else:
+            data_source.append(PASCAL_VAL())
         log = Logger('eval_results.log', level='debug')
         model_start = 'hg_yolo'
-        rootdir = '../' + cfg.OUTPUT_DIR_TASK
+        rootdir = '../' + cfg.OUTPUT_DIR
         root_list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
         root_list.sort()
         for path in root_list:
@@ -180,7 +188,7 @@ def main(auto_all=False):
             models = filter(lambda x: x.startswith(model_start), models)
             models = list(set(map(lambda x: x.split('.')[0], models)))
             models.sort(key=lambda x: int(x[8:]))
-            for data in [data_coco, data_pascal]:
+            for data in data_source:
                 for model in models:
                     strings = get_config(model_dir)
                     tf.reset_default_graph()
@@ -198,3 +206,9 @@ def main(auto_all=False):
 
 if __name__ == '__main__':
     main(True)
+    # print(os.path.realpath('.'))
+    # print(os.path.dirname(os.path.realpath('.')))
+    # print(os.sep)
+    #
+    # print(os.path.dirname(os.path.realpath('.')).split(os.sep))
+

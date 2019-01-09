@@ -16,9 +16,9 @@ def get_config(config_path):
     cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
     cfg.L2 = False
     if values['L2']:
-        cfg.L2 = values['L2']
-    cfg.L2_FACTOR = values['L2_FACTOR']
-    cfg.BOX_FOCAL_LOSS = values['BOX_FOCAL_LOSS']
+        cfg.L2 = bool(values['L2'])
+    cfg.L2_FACTOR = float(values['L2_FACTOR'])
+    cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)

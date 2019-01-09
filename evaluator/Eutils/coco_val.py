@@ -36,6 +36,8 @@ class COCO_VAL(object):
         return image_batch, bbox_batch
 
     def prepare_data(self):
+
+        print('Processing gt_labels from: ' + self.annotations_file)
         # read annotation from coco file
         with tf.gfile.GFile(self.annotations_file, 'r') as fid:
             groundtruth_data = json.load(fid)  # json file
