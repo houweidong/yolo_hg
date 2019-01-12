@@ -16,6 +16,7 @@ import contextlib2
 import tensorflow as tf
 from utils import config as cfg
 from utils.logger import Logger
+import parser
 
 log = Logger('tfrecord_info.log', level='debug')
 flags = tf.app.flags
@@ -38,7 +39,7 @@ tf.flags.DEFINE_string('detection_val_annotations_file',
                        'Detection Validation annotations JSON file.')
 
 
-tf.flags.DEFINE_string('output_dir', '/root/dataset/tfrecord1/', 'Output data directory.')
+tf.flags.DEFINE_string('output_dir', '/root/dataset/tfrecord_only_person/', 'Output data directory.')
 
 FLAGS = flags.FLAGS
 
@@ -92,7 +93,8 @@ def open_sharded_output_tfrecords(exit_stack, base_path, num_shards):
 
 def create_tf_example(image,
                       annotations_dict,
-                      image_dir):
+                      image_dir,
+                      big=False):
     """Converts image and annotations to a tf.Example proto.
     Args:
       image: dict with keys:
@@ -145,9 +147,10 @@ def create_tf_example(image,
         if width <= 0 or height <= 0:
             num_annotations_skipped += 1
             continue
-        if x + width > image_width or y + height > image_height:
-            num_annotations_skipped += 1
-            continue
+        if big:
+            if x + width > image_width or y + height > image_height:
+                num_annotations_skipped += 1
+                continue
         xmin = float(x)
         xmax = float(x + width)
         ymin = float(y)
@@ -206,7 +209,7 @@ def create_tf_example(image,
 
 
 def _create_tf_record_from_coco_annotations(
-        det_annotations_file, kp_annotations_file, image_dir, output_path, num_shards):
+        det_annotations_file, kp_annotations_file, image_dir, output_path, num_shards, big=False):
     """Loads COCO annotation json files and converts to tf.Record format.
     Args:
       det_annotations_file: JSON file containing all categories bounding box annotations.
@@ -263,6 +266,7 @@ def _create_tf_record_from_coco_annotations(
                         missing_annotation_count)
 
         total_num_annotations_skipped = 0
+        total_num_image_skipped = 0
         total_num_iscrowd = 0
         deal_img = []
         num = 0
@@ -281,7 +285,7 @@ def _create_tf_record_from_coco_annotations(
                 # log.logger.info('%d th missed images.',
                 #                 num)
                 continue
-            result_dict, leng = create_tf_example(image, annotations_dict, image_dir)
+            result_dict, leng = create_tf_example(image, annotations_dict, image_dir, False)
             if leng > max:
                 max = leng
             tf_example, num_annotations_skipped, num_iscrowd \
@@ -289,7 +293,7 @@ def _create_tf_record_from_coco_annotations(
             total_num_annotations_skipped += num_annotations_skipped
             total_num_iscrowd += num_iscrowd
             if not tf_example:
-                print('not example')
+                total_num_image_skipped += 1
                 continue
             else:
                 # if num == 5 or num == 4:
@@ -303,9 +307,9 @@ def _create_tf_record_from_coco_annotations(
                 for i in range(len(tf_example)):
                     output_tfrecords[shard_idx].write(tf_example[i].SerializeToString())
 
-        log.logger.info('Finished writing, skipped %d annotations, skipped %d crowd annotations'
-                        'max object nums is %d',
-                        total_num_annotations_skipped, total_num_iscrowd, max)
+        log.logger.info('Finished writing, skipped %d annotations, skipped %d crowd annotations,'
+                        ' skipped %d images, max object nums is %d',
+                        total_num_annotations_skipped, total_num_iscrowd, total_num_image_skipped, max)
 
 
 def main(_):
@@ -328,18 +332,22 @@ def main(_):
     if not tf.gfile.IsDirectory(os.path.join(FLAGS.output_dir, 'val/')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.output_dir, 'val/'))
 
-    _create_tf_record_from_coco_annotations(
-        FLAGS.detection_train_annotations_file,
-        FLAGS.keypoints_train_annotations_file,
-        FLAGS.train_image_dir,
-        train_output_path,
-        num_shards=30)
+    parser.add_argument('-b', '--big_person', action='store_true', help='only have above 0.5 person')
+
     # _create_tf_record_from_coco_annotations(
-    #     FLAGS.detection_val_annotations_file,
-    #     FLAGS.keypoints_val_annotations_file,
-    #     FLAGS.val_image_dir,
-    #     val_output_path,
-    #     num_shards=1)
+    #     FLAGS.detection_train_annotations_file,
+    #     FLAGS.keypoints_train_annotations_file,
+    #     FLAGS.train_image_dir,
+    #     train_output_path,
+    #     30,
+    #     False)
+    _create_tf_record_from_coco_annotations(
+        FLAGS.detection_val_annotations_file,
+        FLAGS.keypoints_val_annotations_file,
+        FLAGS.val_image_dir,
+        val_output_path,
+        1,
+        False)
 
 
 if __name__ == '__main__':

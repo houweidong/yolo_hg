@@ -6,8 +6,9 @@ import utils.config as cfg
 def get_config(config_path):
     config = os.path.join(config_path, 'config.txt')
     values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE', 'OBJECT_SCALE',
-            'NOOBJECT_SCALE', 'COORD_SCALE', 'BOX_FOCAL_LOSS', 'L2', 'L2_FACTOR']
+    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE',
+            'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
+            'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR']
     values = values.fromkeys(keys)
     for line in open(config):
         name, value = line.split(': ')[0], line.split(': ')[1]
@@ -19,6 +20,8 @@ def get_config(config_path):
         cfg.L2 = bool(values['L2'])
     cfg.L2_FACTOR = float(values['L2_FACTOR'])
     cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
+    if values['BOX_HOT_MAP_LEVEL']:
+        cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
@@ -48,13 +51,14 @@ def update_config(args):
     cfg.CLASS_SCALE = args.cl_f
     cfg.CELL_SIZE = args.csize
     cfg.BOX_HOT_MAP = args.bbox_hm
+    cfg.BOX_HOT_MAP_LEVEL = args.bbox_hm_level
     # cfg.BOX_HOT_MAP_LEVEL = args.bhmlevel
     cfg.BOX_FOCAL_LOSS = args.focal_loss
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
-          "COO_SC: {}  CL_SC: {}  BHP: {}  L2: {}  L2_F: {}".
-          format(args.factor, args.ob_f, args.noob_f, args.coo_f,
-                 args.cl_f, args.bbox_hm, args.l2_regularization, args.l2_factor))
+          "COO_SC: {}  CL_SC: {}  BHP: {}  BHPL: {}  L2: {}  L2_F: {}".
+          format(args.factor, args.ob_f, args.noob_f, args.coo_f, args.cl_f,
+                 args.bbox_hm, args.bbox_hm_level, args.l2_regularization, args.l2_factor))
     print("LR: {}".format(cfg.LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU

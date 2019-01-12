@@ -151,7 +151,7 @@ def main(auto_all=False):
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     parser.add_argument('-ds', '--data_source', default='all', type=str, choices=['coco', 'pascal', 'all'])
     parser.add_argument('-ef', '--eval_file', type=str, required=True)
-    parser.add_argument('-lf', '--log_file', type=str)
+    parser.add_argument('-lf', '--log_file', type=str, required=True)
     parser.add_argument('-al', '--auto_all', action='store_true')
     # when calculate single model
     parser.add_argument('--weights', default="hg_yolo-390000", type=str)

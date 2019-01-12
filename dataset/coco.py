@@ -10,6 +10,8 @@ class Coco(object):
     def __init__(self):
         self.sess = None
         self.box_hm = cfg.BOX_HOT_MAP
+        factor_list = [2.65, 5.3, 8, 10.6, 16, 21.2]
+        self.box_hm_factor = factor_list[cfg.BOX_HOT_MAP_LEVEL]
         # self.box_hm_level = cfg.BOX_HOT_MAP_LEVEL
         # self.box_hm_gaussian = cfg.BOX_HOT_MAP_GAUSSIAN
         # self.box_hm_sigma = cfg.BOX_HOT_MAP_SIGMA
@@ -122,9 +124,8 @@ class Coco(object):
         grid_w, grid_h = r + 1 - l, d + 1 - t
         imag_w, imag_h = xmax + 1 - xmin, ymax + 1 - ymin
         # consider image area
-        factor = 1 / np.power(imag_h * imag_w, 21 / 40)
+        factor = 1 / np.power(imag_h * imag_w, 1 / 2) * self.box_hm_factor
         sigma_w, sigma_h = factor * imag_w / 2, factor * imag_h / 2
-
         col = np.reshape(np.array([np.arange(grid_w)] * grid_h), (grid_h, grid_w))
         row = np.transpose(np.reshape(np.array([np.arange(grid_h)] * grid_w), (grid_w, grid_h)))
         center_col, center_row = (grid_w - 1) / 2, (grid_h - 1) / 2
