@@ -147,17 +147,21 @@ class EVALUATOR(object):
 
 def main(auto_all=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', type=str)
+    parser.add_argument('-g','--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     parser.add_argument('-ds', '--data_source', default='all', type=str, choices=['coco', 'pascal', 'all'])
+    parser.add_argument('-ef', '--eval_file', type=str, required=True)
+    parser.add_argument('-lf', '--log_file', type=str)
+    parser.add_argument('-al', '--auto_all', action='store_true')
+    # when calculate single model
+    parser.add_argument('--weights', default="hg_yolo-390000", type=str)
+    parser.add_argument('--weight_dir', default='../log/20_1_100_conv_fc', type=str)
     args = parser.parse_args()
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.cpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    if not auto_all:
-        parser.add_argument('--weights', default="hg_yolo-390000", type=str)
-        parser.add_argument('--weight_dir', default='../log/20_1_100_conv_fc', type=str)
+    if not args.auto_all:
         strings = get_config(args.weight_dir)
 
         net = HOURGLASSYOLONet('eval')
@@ -166,7 +170,8 @@ def main(auto_all=False):
         # data = PASCAL_VAL()
         evaluator = EVALUATOR(detector, data)
         ap = evaluator.eval()
-        log = Logger('eval_results.log', level='debug')
+        log = Logger(args.log_file, level='debug')
+        log.logger.info('/n calculate single ap from {} {}/n'.format(args.weight_dir, args.weights))
         log.logger.info('Data sc:{}  AP:{}  Weights:{}  {}'.format(
             data.__class__.__name__, ap, args.weights, strings))
     else:
@@ -177,9 +182,10 @@ def main(auto_all=False):
             data_source.append(COCO_VAL())
         else:
             data_source.append(PASCAL_VAL())
-        log = Logger('eval_results.log', level='debug')
+        log = Logger(args.eval_file, level='debug')
+        log.logger.info('/n calculate ap from {}/n'.format(args.eval_file))
         model_start = 'hg_yolo'
-        rootdir = '../' + cfg.OUTPUT_DIR
+        rootdir = '../' + args.log_file
         root_list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
         root_list.sort()
         for path in root_list:

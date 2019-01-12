@@ -240,8 +240,8 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-360000", type=str)
-    parser.add_argument('--weight_dir', default='../../log/20_1_20_conv_fc/', type=str)
+    parser.add_argument('--weights', default="hg_yolo-150000", type=str)
+    parser.add_argument('--weight_dir', default='../../log_l2/20_1_100_conv_fc_l2_0.05/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -261,7 +261,8 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    ims_pth = "/root/dataset/val2017"
+    ims_pth = "/home/new/dataset/val2017"
+    # ims_pth = "/root/dataset/val2017"
     # ims_pth = "../pictures"
     # ims_pth = "../pictures1/"
     imname = 'pictures/2.jpg'

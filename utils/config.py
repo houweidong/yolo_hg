@@ -2,7 +2,7 @@ import os
 
 # ------------------------------------------------------------
 # path and dataset parameter
-OUTPUT_DIR = 'log_l2'
+OUTPUT_DIR = 'log_new_data'
 OUTPUT_DIR_TASK = None
 WEIGHTS_DIR = 'weights'
 WEIGHTS_FILE = None
@@ -21,10 +21,10 @@ COCO_MAX_OBJECT_PER_PIC = 100
 COCO_EXAMPLES = 117266
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
-COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
-COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
-# COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
-# COCO_VAL_FILENAME = '/home/new/dataset/tfrecord1/val/'
+# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
+# COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
+COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord_only_person/train/'
+COCO_VAL_FILENAME = '/home/new/dataset/tfrecord_only_person/val/'
 # ------------------------------------------------------------
 
 
@@ -85,12 +85,17 @@ SAVE_ITER = 30000
 
 # ------------------------------------------------------------
 # test parameter
-THRESHOLD = 0.3
-IOU_THRESHOLD_NMS = 0.5
-IOU_THRESHOLD_GT = 0.5
-COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
-COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
 
-PASCAL_PATH = '/root/dataset/data/pascal_voc/'
+THRESHOLD = 0.3
+IOU_THRESHOLD_NMS = 0.3
+
+IOU_THRESHOLD_GT = 0.5
+# COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+# COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
+COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
+
+# PASCAL_PATH = '/root/dataset/data/pascal_voc/'
+PASCAL_PATH = '/home/new/dataset/data/pascal_voc/'
 PASCAL_DATA = os.path.join(PASCAL_PATH, 'VOCdevkit/VOC2012/')
 # ------------------------------------------------------------
