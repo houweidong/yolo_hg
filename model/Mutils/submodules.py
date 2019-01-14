@@ -234,6 +234,34 @@ def tail_conv(r_lin, csize_ch, l2):
     return conv2(conv_down, 1, [1, 1, 1, 1], r_lin_ch, ch, l2)
 
 
+def tail_conv_32(r_lin, csize_ch, l2):
+    ch, _ = csize_ch
+    # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
+    conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch, l2)
+    conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch, l2)
+    conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2, l2)
+    max_p = down_sampling(conv_3, [1, 2, 2, 1], [1, 2, 2, 1])
+    conv_down = conv2(max_p, 1, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch, l2)
+    return conv2(conv_down, 1, [1, 1, 1, 1], r_lin_ch, ch, l2)
+
+
+def tail_conv_16(r_lin, csize_ch, l2):
+    ch, _ = csize_ch
+    # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
+    conv_1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch, l2)
+    conv_2 = conv2(conv_1, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch, l2)
+    conv_3 = conv2(conv_2, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2, l2)
+    max_p = down_sampling(conv_3, [1, 2, 2, 1], [1, 2, 2, 1])
+    cv_1 = conv2(max_p, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2, l2)
+    cv_2 = conv2(cv_1, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 2, l2)
+    cv_3 = conv2(cv_2, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 4, l2)
+    max_p = down_sampling(cv_3, [1, 2, 2, 1], [1, 2, 2, 1])
+    conv_down = conv2(max_p, 1, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch, l2)
+    return conv2(conv_down, 1, [1, 1, 1, 1], r_lin_ch, ch, l2)
+
+
 def tail_conv_deep(r_lin, csize_ch, l2):
     ch, _ = csize_ch
     # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]

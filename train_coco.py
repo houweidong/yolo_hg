@@ -222,14 +222,14 @@ def main():
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')
     parser.add_argument('-l2f', '--l2_factor', default=0.1, type=float)
     parser.add_argument('-bhm', '--bbox_hm', action='store_true', help='use focal loss')
-    parser.add_argument('-bhml', '--bbox_hm_level', default=0, type=int, choices=[i for i in range(6)])
-    parser.add_argument('--csize', default=64, type=int)
+    parser.add_argument('-bhml', '--bbox_hm_level', default=0, type=int, choices=[i for i in range(8)])
+    parser.add_argument('-cs', '--csize', default=64, type=int)
     parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--position', default="tail", type=str,
                         choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
-                                 "tail_conv_deep", "tail_conv_deep_fc"])
+                                 "tail_conv_deep", "tail_conv_deep_fc", "tail_conv_32", "tail_conv_16"])
     parser.add_argument('--train_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--restore_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--log_dir', type=str)

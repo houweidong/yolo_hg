@@ -145,7 +145,7 @@ class EVALUATOR(object):
         return ap
 
 
-def main(auto_all=False):
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g','--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -211,7 +211,7 @@ def main(auto_all=False):
 
 
 if __name__ == '__main__':
-    main(True)
+    main()
     # print(os.path.realpath('.'))
     # print(os.path.dirname(os.path.realpath('.')))
     # print(os.sep)
