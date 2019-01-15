@@ -10,7 +10,7 @@ class Coco(object):
     def __init__(self):
         self.sess = None
         self.box_hm = cfg.BOX_HOT_MAP
-        factor_list = [2.65, 5.3, 8, 10.6, 16, 21.2, 32, 42.5]
+        factor_list = [2.65, 5.3, 8, 10.6, 16, 21.2, 32, 42.5, 5000]
         self.box_hm_factor = factor_list[cfg.BOX_HOT_MAP_LEVEL]
         # self.box_hm_level = cfg.BOX_HOT_MAP_LEVEL
         # self.box_hm_gaussian = cfg.BOX_HOT_MAP_GAUSSIAN
