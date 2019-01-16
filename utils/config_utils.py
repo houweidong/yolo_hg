@@ -6,7 +6,7 @@ import utils.config as cfg
 def get_config(config_path):
     config = os.path.join(config_path, 'config.txt')
     values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'LOSS_FACTOR', 'LEARNING_RATE',
+    keys = ['ADD_YOLO_POSITION', 'CELL_SIZE', 'LOSS_FACTOR', 'LEARNING_RATE',
             'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
             'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR']
     values = values.fromkeys(keys)
@@ -15,13 +15,15 @@ def get_config(config_path):
         if name in keys:
             values[name] = value.strip()
     cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
+    cfg.CELL_SIZE = int(values['CELL_SIZE'])
     cfg.L2 = False
-    if values['L2']:
-        cfg.L2 = bool(values['L2'])
+    # if values['L2']:
+    cfg.L2 = bool(values['L2'])
+    # if values['L2']:
     cfg.L2_FACTOR = float(values['L2_FACTOR'])
     cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
-    if values['BOX_HOT_MAP_LEVEL']:
-        cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
+    # if values['BOX_HOT_MAP_LEVEL']:
+    cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
