@@ -219,6 +219,7 @@ class Solver(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-bpc', '--boxes_per_cell', default=2, type=int)
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')
     parser.add_argument('-l2f', '--l2_factor', default=0.1, type=float)
     parser.add_argument('-bhm', '--bbox_hm', action='store_true', help='use focal loss')

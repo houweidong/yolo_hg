@@ -6,7 +6,7 @@ import utils.config as cfg
 def get_config(config_path):
     config = os.path.join(config_path, 'config.txt')
     values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'CELL_SIZE', 'LOSS_FACTOR', 'LEARNING_RATE',
+    keys = ['ADD_YOLO_POSITION', 'CELL_SIZE', 'BOXES_PER_CELL', 'LOSS_FACTOR', 'LEARNING_RATE',
             'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
             'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR']
     values = values.fromkeys(keys)
@@ -24,6 +24,7 @@ def get_config(config_path):
     cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
     # if values['BOX_HOT_MAP_LEVEL']:
     cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
+    cfg.BOXES_PER_CELL = int(values['BOXES_PER_CELL'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
@@ -56,6 +57,7 @@ def update_config(args):
     cfg.BOX_HOT_MAP_LEVEL = args.bbox_hm_level
     # cfg.BOX_HOT_MAP_LEVEL = args.bhmlevel
     cfg.BOX_FOCAL_LOSS = args.focal_loss
+    cfg.BOXES_PER_CELL = args.boxes_per_cell
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
