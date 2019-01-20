@@ -87,8 +87,10 @@ SAVE_ITER = 30000
 # ------------------------------------------------------------
 # test parameter
 
-THRESHOLD = 0.3
-IOU_THRESHOLD_NMS = 0.3
+THRESHOLD = 0.7
+IOU_THRESHOLD_NMS = 0.2
+HG_THRESHOLD = 0
+HG_FACTOR = 2
 
 IOU_THRESHOLD_GT = 0.5
 # COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'

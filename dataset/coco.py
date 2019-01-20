@@ -41,42 +41,6 @@ class Coco(object):
                                                         self.coco_val_fn,
                                                         shuffle=False)
 
-    # def prepare_prob(self):
-    #     if self.box_hm:
-    #         prob_all = []
-    #         for level in range(self.cell_size // 2):
-    #             # dmax = self.box_hm_level * pow(2, 0.5)
-    #             box_hm_prob_size = 2 * level + 1
-    #             col = np.reshape(np.array([np.arange(box_hm_prob_size)] * box_hm_prob_size),
-    #                              (box_hm_prob_size, box_hm_prob_size))
-    #             row = np.transpose(col)
-    #             center = level
-    #             # print(d)
-    #             # if not self.box_hm_gaussian:
-    #             #     d = np.sqrt(np.square(row - center) + np.square(col - center))
-    #             #     prob = np.ones((self.box_hm_prob_size, self.box_hm_prob_size)) - 0.9 / dmax * d
-    #             # else:
-    #             prob = np.exp(-1 * (np.square(row - center) +
-    #                                 np.square(col - center)) / self.box_hm_sigma ** 2)
-    #             prob_all.append(prob)
-    #         return prob_all
-    #     else:
-    #         return None
-
-    # def gn_hm_prob(self):
-    #     prob_all = []
-    #     for level in range(self.cell_size // 2):
-    #         # dmax = self.box_hm_level * pow(2, 0.5)
-    #         box_hm_prob_size = 2 * level + 1
-    #         col = np.reshape(np.array([np.arange(box_hm_prob_size)] * box_hm_prob_size),
-    #                          (box_hm_prob_size, box_hm_prob_size))
-    #         row = np.transpose(col)
-    #         center = level
-    #         prob = np.exp(-1 * (np.square(row - center) +
-    #                             np.square(col - center)) / self.box_hm_sigma ** 2)
-    #         prob_all.append(prob)
-    #         return prob_all
-
     def get(self, phase):
         if phase == "train":
             example, l_det, l_cg, l_kp, l_np = self.sess.run([self.train_im_batch,
@@ -102,22 +66,6 @@ class Coco(object):
         #     plt.show()
 
         return images, labels_det, labels_kp
-
-    # def get_box_hm_prob(self, y_ind, x_ind, label, box):
-    #     lt, rt, tp, dn = y_ind - self.box_hm_level, y_ind + self.box_hm_level + 1, \
-    #                      x_ind - self.box_hm_level, x_ind + self.box_hm_level + 1
-    #     left, right, top, down = max(lt, 0), min(rt, self.cell_size), \
-    #                              max(tp, 0), min(dn, self.cell_size)
-    #     lt_mg, rt_mg, tp_mg, dn_mg = left - lt, right - rt, top - tp, down - dn
-    #     prob = self.box_hm_prob[lt_mg:self.box_hm_prob_size + rt_mg,
-    #            tp_mg:self.box_hm_prob_size + dn_mg]
-    #     condition = label[left:right, top:down, 0] > prob
-    #     prob = np.where(condition,
-    #                     label[left:right, top:down, 0], prob)
-    #     hm_box = np.where(condition[:, :, np.newaxis],
-    #                       label[left:right, top:down, 1:5],
-    #                       box[np.newaxis, np.newaxis, :])
-    #     return left, right, top, down, prob, hm_box
 
     def gn_box_hm_prob(self, xmin, xmax, ymin, ymax, label):
         l, r, t, d = map(lambda x: int(x * self.cell_size / self.image_size), (xmin, xmax, ymin, ymax))

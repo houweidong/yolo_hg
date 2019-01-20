@@ -15,19 +15,16 @@ class Detector(object):
         self.fc = cfg.BOX_FOCAL_LOSS
         self.net = net
         self.weights_file = weight_file
-        # self.classes = cfg.COCO_CLASSES
-        # self.num_class = len(self.classes)
-        # self.image_size = cfg.IMAGE_SIZE
-        # self.cell_size = cfg.CELL_SIZE
-        # self.boxes_per_cell = cfg.BOXES_PER_CELL
         self.threshold = cfg.THRESHOLD
+        self.hg_threshold = cfg.HG_THRESHOLD
+        self.hg_factor = cfg.HG_FACTOR
+        self.kp_skeleton = np.array([[15, 13], [13, 11], [16, 14], [14, 12],
+                                     [11, 12], [5, 11], [6, 12], [5, 6],
+                                     [5, 7], [6, 8], [7, 9], [8, 10],
+                                     [1, 2], [0, 1], [0, 2], [1, 3],
+                                     [2, 4], [3, 5], [4, 6]])
         self.iou_threshold = cfg.IOU_THRESHOLD_NMS
-        # self.boundary1 = self.cell_size * self.cell_size * self.num_class
-        # self.boundary2 = self.boundary1 +\
-        #     self.cell_size * self.cell_size * self.boxes_per_cell
-        # self.boundary1 = self.cell_size * self.cell_size * self.num_class if self.num_class != 1 else 0
-        # self.boundary2 = self.boundary1 +\
-        #     self.cell_size * self.cell_size * self.boxes_per_cell
+
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
@@ -36,22 +33,33 @@ class Detector(object):
         self.saver.restore(self.sess, self.weights_file)
 
     def draw_result(self, img, result):
-        for i in range(len(result)):
+        yolo_result, hg_result = result
+        row, col = hg_result
+        # skeleton = np.array([])
+        for i in range(len(yolo_result)):
             # print(result[i][0])
             # if result[i][0] != 'person':
             #     continue
-            x = int(result[i][1])
-            y = int(result[i][2])
-            w = int(result[i][3] / 2)
-            h = int(result[i][4] / 2)
+            rows, cols = row[i], col[i]
+            # skeleton = np.concatenate((skeleton, self.kp_skeleton + 17 * i))
+            x = int(yolo_result[i][1])
+            y = int(yolo_result[i][2])
+            w = int(yolo_result[i][3] / 2)
+            h = int(yolo_result[i][4] / 2)
             cv2.rectangle(img, (x - w, y - h), (x + w, y + h), (0, 255, 0), 2)
             cv2.rectangle(img, (x - w, y - h - 20),
                           (x + w, y - h), (125, 125, 125), -1)
             lineType = cv2.LINE_AA if cv2.__version__ > '3' else cv2.CV_AA
             cv2.putText(
-                img, result[i][0] + ' : %.2f' % result[i][5],
+                img, yolo_result[i][0] + ' : %.2f' % yolo_result[i][5],
                 (x - w + 5, y - h - 7), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                 (0, 0, 0), 1, lineType)
+            for sk in self.kp_skeleton:
+                if np.all(rows[sk] >= 0):
+                    cv2.line(img, (cols[sk][0], rows[sk][0]), (cols[sk][1], rows[sk][1]), (255, 0, 0), 2)
+            for kp in zip(cols, rows):
+                if kp[0] >= 0:
+                    cv2.circle(img, kp, 1, (0, 0, 255), 4)
 
     def detect(self, img):
         img_h, img_w, _ = img.shape
@@ -60,48 +68,62 @@ class Detector(object):
         inputs = (inputs / 255.0) * 2.0 - 1.0
         inputs = np.reshape(inputs, (1, self.net.image_size, self.net.image_size, 3))
 
-        result = self.detect_from_cvmat(inputs)[0]
+        yolo, hg = self.detect_from_cvmat(inputs)
+        yolo_result, hg_result = yolo[0], hg[0]
+        for i in range(len(yolo_result)):
+            yolo_result[i][1] *= (1.0 * img_w / self.net.image_size)
+            yolo_result[i][2] *= (1.0 * img_h / self.net.image_size)
+            yolo_result[i][3] *= (1.0 * img_w / self.net.image_size)
+            yolo_result[i][4] *= (1.0 * img_h / self.net.image_size)
+        rows, cols = np.array(hg_result[0]) * img_h // self.net.hg_cell_size, \
+                     np.array(hg_result[1]) * img_w // self.net.hg_cell_size
 
-        for i in range(len(result)):
-            result[i][1] *= (1.0 * img_w / self.net.image_size)
-            result[i][2] *= (1.0 * img_h / self.net.image_size)
-            result[i][3] *= (1.0 * img_w / self.net.image_size)
-            result[i][4] *= (1.0 * img_h / self.net.image_size)
-
-        return result
+        return yolo_result, (rows, cols)
 
     def detect_from_cvmat(self, inputs):
-        net_output = self.sess.run(self.net.yolo_logits,
-                                   feed_dict={self.net.images: inputs})
-        results = []
-        for i in range(net_output.shape[0]):
-            results.append(self.interpret_output(net_output[i]))
+        yolo_output, hg_output = self.sess.run([self.net.yolo_logits, self.net.hg_logits],
+                                               feed_dict={self.net.images: inputs})
+        yolo_results = []
+        hg_results = []
+        for i in range(yolo_output.shape[0]):
+            yolo_results.append(self.interpret_output_yolo(yolo_output[i]))
+            hg_results.append(self.interpret_output_hg(yolo_results[i], hg_output[i]))
+        return yolo_results, hg_results
 
-        return results
+    def interpret_output_hg(self, yolo_output, hg_output):
+        rows = []
+        cols = []
+        for box in yolo_output:
+            x, y, w, h = map(lambda xx: xx * self.net.hg_cell_size / self.net.image_size, box[1:5])
+            x1 = max(min(int(x - w * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
+            x2 = max(min(int(x + w * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
+            y1 = max(min(int(y - h * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
+            y2 = max(min(int(y + h * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
 
-    def interpret_output(self, output):
+            hg_output_box = hg_output[:, y1:y2 + 1, x1:x2 + 1]
+            hg_output_box = hg_output_box.reshape([self.net.nPoints, -1])
+            kp_index_1d = np.argmax(hg_output_box, 1)
+            kp_max_pro = np.max(hg_output_box, 1)
+            row, col = np.divmod(kp_index_1d, x2 + 1 - x1)
+            row += y1
+            col += x1
+            row = np.where(kp_max_pro > self.hg_threshold, row, -1)
+            col = np.where(kp_max_pro > self.hg_threshold, col, -1)
+            rows.append(row)
+            cols.append(col)
+        return rows, cols
+
+    def interpret_output_yolo(self, output):
         probs = np.zeros((self.net.cell_size, self.net.cell_size,
                           self.net.boxes_per_cell, self.net.num_class))
         class_probs = output[:, :, :self.net.boundary1] if self.net.num_class != 1 \
             else np.ones((self.net.cell_size, self.net.cell_size, 1))
-        # if self.num_class != 1:
-        #     class_probs = np.reshape(
-        #         output[:, :, :self.net.boundary1],
-        #         (self.cell_size, self.cell_size, self.num_class))
-        # else:
-        #     class_probs = np.ones((self.cell_size, self.cell_size, self.num_class))
         scales = output[:, :, self.net.boundary1:self.net.boundary2]
         if self.fc:
             scales = 1 / (1 + np.exp(-scales))
         boxes = np.reshape(
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
-        # scales = np.reshape(
-        #     output[self.boundary1:self.boundary2],
-        #     (self.cell_size, self.cell_size, self.boxes_per_cell))
-        # boxes = np.reshape(
-        #     output[self.boundary2:],
-        #     (self.cell_size, self.cell_size, self.boxes_per_cell, 4))
         offset = np.array(
             [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.boxes_per_cell)
         offset = np.transpose(
@@ -240,8 +262,8 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-150000", type=str)
-    parser.add_argument('--weight_dir', default='../../log_l2/20_1_100_conv_fc_l2_0.05/', type=str)
+    parser.add_argument('--weights', default="hg_yolo-200000", type=str)
+    parser.add_argument('--weight_dir', default='../../log_bhm/4.5_0.3_0.8_conv32_fc_l2_0.005_bhm2/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -261,11 +283,13 @@ def main():
     # detector.camera_detector(cap)
 
     # detect from image file
-    ims_pth = "/home/new/dataset/val2017"
+    # ims_pth = "/home/new/dataset/val2017"
     # ims_pth = "/root/dataset/val2017"
+    # ims_pth = '/root/dataset/data/pascal_voc/VOCdevkit/VOC2012/JPEGImages/'
     # ims_pth = "../pictures"
+    ims_pth = '/root/dataset/front-test/'
     # ims_pth = "../pictures1/"
-    imname = 'pictures/2.jpg'
+    # imname = 'pictures/2.jpg'
     detector.images_detector(ims_pth)
 
 
