@@ -12,7 +12,7 @@ from utils.timer import Timer
 class Detector(object):
 
     def __init__(self, net, weight_file):
-        self.fc = cfg.BOX_FOCAL_LOSS
+        # self.fc = cfg.BOX_FOCAL_LOSS
         self.net = net
         self.weights_file = weight_file
         self.threshold = cfg.THRESHOLD
@@ -119,11 +119,13 @@ class Detector(object):
         class_probs = output[:, :, :self.net.boundary1] if self.net.num_class != 1 \
             else np.ones((self.net.cell_size, self.net.cell_size, 1))
         scales = output[:, :, self.net.boundary1:self.net.boundary2]
-        if self.fc:
+        if self.net.focal_loss:
             scales = 1 / (1 + np.exp(-scales))
         boxes = np.reshape(
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
+        if self.net.coord_sigmoid:
+            boxes[..., 0:2] = tf.sigmoid(boxes[..., 0:2])
         offset = np.array(
             [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.boxes_per_cell)
         offset = np.transpose(
