@@ -219,6 +219,7 @@ class Solver(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-csm', '--coord_sigmoid', default=False, type=bool)
     parser.add_argument('-ims', '--image_size', default=256, type=int)
     parser.add_argument('-bpc', '--boxes_per_cell', default=2, type=int)
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')

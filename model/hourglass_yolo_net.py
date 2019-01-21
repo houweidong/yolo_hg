@@ -9,6 +9,7 @@ class HOURGLASSYOLONet(object):
     def __init__(self, train_eval_visual='train'):
         self.l2 = tf.contrib.layers.l2_regularizer(cfg.L2_FACTOR) if cfg.L2 else None
         self.focal_loss = cfg.BOX_FOCAL_LOSS
+        self.coord_sigmoid = cfg.COORD_SIGMOID
         self.r_object = cfg.R_OBJECT
         # self.alpha_object = 5.0
         self.loss_factor = cfg.LOSS_FACTOR
@@ -220,6 +221,8 @@ class HOURGLASSYOLONet(object):
             predict_boxes = tf.reshape(
                 predicts[:, :, :, self.boundary2:],
                 [self.batch_size, self.cell_size, self.cell_size, self.boxes_per_cell, 4])
+            if self.coord_sigmoid:
+                predict_boxes[..., 0:2] = tf.sigmoid(predict_boxes[..., 0:2])
 
             # object indicator(1 represents has object, 0 no object)
             response = tf.reshape(

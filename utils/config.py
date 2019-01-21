@@ -43,6 +43,7 @@ CELL_SIZE = 64
 BOXES_PER_CELL = 2
 # DISP_CONSOLE = False
 
+COORD_SIGMOID = False
 BOX_FOCAL_LOSS = False
 BOX_HOT_MAP = True
 BOX_HOT_MAP_LEVEL = 0
@@ -59,12 +60,12 @@ R_OBJECT = 2
 # ALPHA_OBJECT = 5
 
 # ....hourglass parameter
-WIDTH = 256
-HEIGHT = 256
-HM_HEIGHT = 64
-HM_WIDTH = 64
+WIDTH = IMAGE_SIZE
+HEIGHT = IMAGE_SIZE
+HM_HEIGHT = IMAGE_SIZE // 4
+HM_WIDTH = IMAGE_SIZE // 4
 COCO_NPOINTS = 17
-HG_CELL_SIZE = 64
+HG_CELL_SIZE = IMAGE_SIZE // 4
 NUM_MOUDEL = 1  # hourglass 中residual 模块的数量
 NUM_STACK = 2  # hourglass 堆叠的层数
 NUM_FEATS = 256  # hourglass 中特征图的数量
@@ -89,8 +90,8 @@ SAVE_ITER = 30000
 
 THRESHOLD = 0.7
 IOU_THRESHOLD_NMS = 0.2
-HG_THRESHOLD = 0
-HG_FACTOR = 2
+HG_THRESHOLD = 0.4
+HG_FACTOR = 1.2
 
 IOU_THRESHOLD_GT = 0.5
 # COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'

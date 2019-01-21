@@ -7,7 +7,7 @@ import utils.config as cfg
 class Detector(object):
 
     def __init__(self, net, weight_file):
-        self.focal_loss = cfg.BOX_FOCAL_LOSS
+        # self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.net = net
         self.weights_file = weight_file
         self.sess = tf.Session()
@@ -42,7 +42,7 @@ class Detector(object):
             else np.ones((self.net.cell_size, self.net.cell_size, 1))
 
         scales = output[:, :, self.net.boundary1:self.net.boundary2]
-        if self.focal_loss:
+        if self.net.focal_loss:
             # if inx >= 0:  # 对sigmoid函数的优化，避免了出现极大的数据溢出
             #     return 1.0 / (1 + exp(-inx))
             # else:
@@ -54,6 +54,9 @@ class Detector(object):
         boxes = np.reshape(
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
+
+        if self.net.coord_sigmoid:
+            boxes[..., 0:2] = tf.sigmoid(boxes[..., 0:2])
 
         offset = np.array(
             [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.boxes_per_cell)

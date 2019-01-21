@@ -8,7 +8,7 @@ def get_config(config_path):
     values = collections.OrderedDict()
     keys = ['ADD_YOLO_POSITION', 'IMAGE_SIZE', 'CELL_SIZE', 'BOXES_PER_CELL', 'LOSS_FACTOR', 'LEARNING_RATE',
             'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
-            'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR']
+            'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR', 'COORD_SIGMOID']
     values = values.fromkeys(keys)
     for line in open(config):
         name, value = line.split(': ')[0], line.split(': ')[1]
@@ -23,6 +23,7 @@ def get_config(config_path):
     cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
     cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     cfg.BOXES_PER_CELL = int(values['BOXES_PER_CELL'])
+    cfg.COORD_SIGMOID = bool(values['COORD_SIGMOID'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
@@ -57,11 +58,14 @@ def update_config(args):
     cfg.BOX_FOCAL_LOSS = args.focal_loss
     cfg.BOXES_PER_CELL = args.boxes_per_cell
     cfg.IMAGE_SIZE = args.image_size
+    cfg.COORD_SIGMOID = args.coord_sigmoid
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
-          "COO_SC: {}  CL_SC: {}  BHP: {}  BHPL: {}  L2: {}  L2_F: {}".
+          "COO_SC: {}  CL_SC: {}  BHP: {}  BHPL: {}  "
+          "L2: {}  L2_F: {}  IMAGE_SIZE: {}  COORDSM: {}".
           format(args.factor, args.ob_f, args.noob_f, args.coo_f, args.cl_f,
-                 args.bbox_hm, args.bbox_hm_level, args.l2_regularization, args.l2_factor))
+                 args.bbox_hm, args.bbox_hm_level, args.l2_regularization, args.l2_factor,
+                 args.image_size, args.coord_sigmoid))
     print("LR: {}".format(cfg.LEARNING_RATE))
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.GPU

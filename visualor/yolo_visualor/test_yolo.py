@@ -262,7 +262,7 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-200000", type=str)
+    parser.add_argument('--weights', default="hg_yolo-210000", type=str)
     parser.add_argument('--weight_dir', default='../../log_bhm/4.5_0.3_0.8_conv32_fc_l2_0.005_bhm2/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
@@ -279,18 +279,18 @@ def main():
     detector = Detector(yolo, os.path.join(args.weight_dir, args.weights))
 
     # detect from camera
-    # cap = cv2.VideoCapture(-1)
-    # detector.camera_detector(cap)
+    cap = cv2.VideoCapture(-1)
+    detector.camera_detector(cap)
 
     # detect from image file
     # ims_pth = "/home/new/dataset/val2017"
     # ims_pth = "/root/dataset/val2017"
     # ims_pth = '/root/dataset/data/pascal_voc/VOCdevkit/VOC2012/JPEGImages/'
     # ims_pth = "../pictures"
-    ims_pth = '/root/dataset/front-test/'
+    # ims_pth = '/root/dataset/front-test/'
     # ims_pth = "../pictures1/"
     # imname = 'pictures/2.jpg'
-    detector.images_detector(ims_pth)
+    # detector.images_detector(ims_pth)
 
 
 if __name__ == '__main__':
