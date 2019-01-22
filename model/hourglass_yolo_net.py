@@ -218,11 +218,14 @@ class HOURGLASSYOLONet(object):
             # x y: offset upon grids of cell_size X cell_size
             # w h: sqrt of scales(0~1) about w and h relative to pictures of 256*256
             #      for example real w h: (0.4, 0.8), so w h: (0.63, 0.89)
-            predict_boxes = tf.reshape(
+            predict_boxes_base = tf.reshape(
                 predicts[:, :, :, self.boundary2:],
                 [self.batch_size, self.cell_size, self.cell_size, self.boxes_per_cell, 4])
             if self.coord_sigmoid:
-                predict_boxes[..., 0:2] = tf.sigmoid(predict_boxes[..., 0:2])
+                predict_boxes_xy = tf.sigmoid(predict_boxes_base[..., 0:2])
+                predict_boxes = tf.concat([predict_boxes_xy, predict_boxes_base[..., 2:]], 4)
+            else:
+                predict_boxes = predict_boxes_base
 
             # object indicator(1 represents has object, 0 no object)
             response = tf.reshape(
