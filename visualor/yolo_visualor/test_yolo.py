@@ -17,7 +17,8 @@ class Detector(object):
         self.weights_file = weight_file
         self.threshold = cfg.THRESHOLD
         self.hg_threshold = cfg.HG_THRESHOLD
-        self.hg_factor = cfg.HG_FACTOR
+        self.hg_factor_height = cfg.HG_FACTOR_HEIGHT
+        self.hg_factor_width = cfg.HG_FACTOR_WIDTH
         self.kp_skeleton = np.array([[15, 13], [13, 11], [16, 14], [14, 12],
                                      [11, 12], [5, 11], [6, 12], [5, 6],
                                      [5, 7], [6, 8], [7, 9], [8, 10],
@@ -95,10 +96,10 @@ class Detector(object):
         cols = []
         for box in yolo_output:
             x, y, w, h = map(lambda xx: xx * self.net.hg_cell_size / self.net.image_size, box[1:5])
-            x1 = max(min(int(x - w * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
-            x2 = max(min(int(x + w * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
-            y1 = max(min(int(y - h * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
-            y2 = max(min(int(y + h * self.hg_factor / 2), self.net.hg_cell_size - 1), 0)
+            x1 = max(min(int(x - w * self.hg_factor_width / 2), self.net.hg_cell_size - 1), 0)
+            x2 = max(min(int(x + w * self.hg_factor_width / 2), self.net.hg_cell_size - 1), 0)
+            y1 = max(min(int(y - h * self.hg_factor_height / 2), self.net.hg_cell_size - 1), 0)
+            y2 = max(min(int(y + h * self.hg_factor_height / 2), self.net.hg_cell_size - 1), 0)
 
             hg_output_box = hg_output[:, y1:y2 + 1, x1:x2 + 1]
             hg_output_box = hg_output_box.reshape([self.net.nPoints, -1])
@@ -264,7 +265,7 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-210000", type=str)
+    parser.add_argument('--weights', default="hg_yolo-180000", type=str)
     parser.add_argument('--weight_dir', default='../../log_bhm/4.5_0.3_0.8_conv32_fc_l2_0.005_bhm2/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)

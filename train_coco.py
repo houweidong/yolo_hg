@@ -4,7 +4,8 @@ import datetime
 import tensorflow as tf
 from utils import config as cfg
 from utils.config_utils import update_config
-from model.hourglass_yolo_net import HOURGLASSYOLONet
+# from model.hourglass_yolo_net import HOURGLASSYOLONet
+from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
 from dataset.coco import Coco
 import tensorflow.contrib.slim as slim
 
@@ -13,6 +14,7 @@ class Solver(object):
 
     def __init__(self, net, data):
         # self.lw = lw
+        self.gpu_number = cfg.GPU_NUMBER
         self.train_mode = cfg.TRAIN_MODE
         self.restore_mode = cfg.RESTORE_MODE
         self.add_yolo_position = cfg.ADD_YOLO_POSITION
@@ -45,122 +47,150 @@ class Solver(object):
         self.train_scopes = cfg.TRAINABLE_SCOPES
         self.save_cfg()
 
-        self.variable_to_restore = tf.global_variables()
-        self.saver = tf.train.Saver(self.variable_to_restore, max_to_keep=None)
         self.ckpt_file = os.path.join(self.output_dir, 'hg_yolo')
-
-        self.summary_op = tf.summary.merge_all('train')
-        self.summary_op_val = tf.summary.merge_all('val')
-
         self.writer = tf.summary.FileWriter(self.output_dir, flush_secs=60)
 
         self.global_step = tf.train.create_global_step()
         self.learning_rate = tf.train.exponential_decay(
             self.initial_learning_rate, self.global_step, self.decay_steps,
             self.decay_rate, self.staircase, name='learning_rate')
-        self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
-        self.train_op = self.optimizer.minimize(self.net.loss,
-                                                self.global_step,
-                                                self.get_trainable_variables())
-        self.val_op = self.net.loss
+        # self.labels_det, self.labels_kp = self.define_holder_det_kp()
+        # self.images = self.net.images
 
-        gpu_options = tf.GPUOptions()
-        config = tf.ConfigProto(gpu_options=gpu_options)
-        self.sess = tf.Session(config=config)
-        self.sess.run(tf.global_variables_initializer())
-        self.coord = tf.train.Coordinator()
-        self.threads = tf.train.start_queue_runners(coord=self.coord, sess=self.sess)
-        self.data.sess = self.sess
+    def define_holder_det_kp(self):
 
-        if self.weights_file is not None:
-            print('Restoring weights from: ' + self.weights_file)
-            self.restore()
-
-        self.writer.add_graph(self.sess.graph)
+        labels_det = tf.placeholder(
+            tf.float32,
+            [self.net.batch_size * self.gpu_number, self.net.cell_size, self.net.cell_size,
+             self.net.num_class + 5 if self.net.num_class != 1 else 5])
+        labels_kp = tf.placeholder(
+            tf.float32,
+            [self.net.batch_size * self.gpu_number, self.net.nPoints, self.net.hg_cell_size,
+             self.net.hg_cell_size])
+        return labels_det, labels_kp
 
     def train(self):
 
-        step = 1
-        while True:
-            # for step in range(1, self.max_iter + 1):
-            images, labels_det, labels_kp = self.data.get("train")
-            feed_dict = {self.net.images: images,
-                         self.net.labels_det: labels_det,
-                         self.net.labels_kp: labels_kp}
+        with tf.device("/cpu:0"):
+            # self.train_op = self.optimizer.minimize(self.net.loss,
+            #                                         self.global_step,
+            #                                         self.get_trainable_variables())
+            # global_step = tf.train.get_or_create_global_step()
+            tower_grads = []
+            tower_loss = []
 
-            if step % self.summary_iter == 0:
+            labels_det_hd, labels_kp_hd = self.define_holder_det_kp()
+            images_hd = self.net.images
+            opt = tf.train.RMSPropOptimizer(self.learning_rate)
+            with tf.variable_scope(tf.get_variable_scope()):
+                for i in range(self.gpu_number):
+                    with tf.device("/gpu:%d" % i):
+                        with tf.name_scope("tower_%d" % i) as scope:
+                            x = images_hd[i * self.net.batch_size:(i + 1) * self.net.batch_size]
+                            y_det = labels_det_hd[i * self.net.batch_size:(i + 1) * self.net.batch_size]
+                            y_kp = labels_kp_hd[i * self.net.batch_size:(i + 1) * self.net.batch_size]
+                            hg_logits, yolo_logits = self.net.build_network(x)
+                            tf.get_variable_scope().reuse_variables()
+                            loss, hg_loss, yolo_loss = \
+                                self.net.loss_layer([hg_logits, yolo_logits],
+                                                    [y_det, y_kp], scope)
+                            tower_loss.append((loss, hg_loss, yolo_loss))
+                            grads = opt.compute_gradients(loss)
+                            tower_grads.append(grads)
+                            # if i == 0:
+                            #     logits_test = conv_net(_x, False)
+                            #     correct_prediction = tf.equal(tf.argmax(logits_test, 1), tf.argmax(_y, 1))
+                            #     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            grads = self.average_gradients(tower_grads)
+            loss_mean, hg_loss_mean, yolo_loss_mean = self.average_loss(tower_loss)
+            train_op = opt.apply_gradients(grads)
+            # have to define this after the net define which has the summary scalar define
+            summary_op = tf.summary.merge_all('train')
+            summary_op_val = tf.summary.merge_all('val')
+        saver = tf.train.Saver(tf.global_variables(), max_to_keep=None)
+        config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+            self.data.sess = sess
 
-                val_im_bt, val_det_bt, val_kp_bt = self.data.get("val")
-                val_feed_dict = {self.net.images: val_im_bt,
-                                 self.net.labels_det: val_det_bt,
-                                 self.net.labels_kp: val_kp_bt}
+            if self.weights_file is not None:
+                print('Restoring weights from: ' + self.weights_file)
+                self.restore(sess, saver)
 
-                if step % (self.summary_iter * 10) == 0:
+            self.writer.add_graph(sess.graph)
+            step = 1
+            while step < self.max_iter:
+                # for step in range(1, self.max_iter + 1):
+                images, labels_det, labels_kp = self.data.get("train")
+                feed_dict = {images_hd: images,
+                             labels_det_hd: labels_det,
+                             labels_kp_hd: labels_kp}
 
-                    # train
-                    summary_str, loss, hg_loss, yolo_loss, _ = \
-                        self.sess.run([self.summary_op, self.net.loss,
-                                       self.net.hg_loss, self.net.yolo_loss, self.train_op],
-                                      feed_dict=feed_dict)
+                if step % self.summary_iter == 0:
 
-                    log_str = "TRAIN Loss: {:<.3e}  HGLoss: {:<.3e}  YOLOLoss: {:<.3e}  " \
-                              "Epoch: {}  Step: {:<5}  Learning rate:  {:.3e}" \
-                        .format(
-                                loss,
-                                hg_loss,
-                                yolo_loss,
-                                step // cfg.COCO_EPOCH_SIZE + 1,
-                                int(step),
-                                self.learning_rate.eval(session=self.sess))
-                    print(log_str)
+                    val_im_bt, val_det_bt, val_kp_bt = self.data.get("val")
+                    val_feed_dict = {images_hd: val_im_bt,
+                                     labels_det_hd: val_det_bt,
+                                     labels_kp_hd: val_kp_bt}
 
-                    # val
-                    if step % (self.summary_iter * 1000) == 0:
-                        summary_str_val, loss_val, hg_loss_val, yolo_loss_val = self.sess.run(
-                            [self.summary_op_val,
-                             self.net.loss,
-                             self.net.hg_loss,
-                             self.net.yolo_loss],
-                            feed_dict=val_feed_dict)
-                        log_str_val = "VAL   Loss: {:<.3e}  HGLoss: {:<.3e}  " \
-                                      "YOLOLoss: {:<.3e}".format(loss_val, hg_loss_val, yolo_loss_val)
-                        print(log_str_val)
+                    if step % (self.summary_iter * 10) == 0:
+
+                        # train
+                        summary_str, loss_rs, hg_loss_rs, yolo_loss_rs, _ = \
+                            sess.run([summary_op, loss_mean,
+                                      hg_loss_mean, yolo_loss_mean, train_op],
+                                     feed_dict=feed_dict)
+
+                        log_str = "TRAIN Loss: {:<.3e}  HGLoss: {:<.3e}  YOLOLoss: {:<.3e}  " \
+                                  "Epoch: {}  Step: {:<5}  Learning rate:  {:.3e}" \
+                            .format(loss_rs,
+                                    hg_loss_rs,
+                                    yolo_loss_rs,
+                                    step // cfg.COCO_EPOCH_SIZE + 1,
+                                    int(step),
+                                    self.learning_rate.eval(session=sess))
+                        print(log_str)
+
+                        # val
+                        if step % (self.summary_iter * 1000) == 0:
+                            summary_str_val, loss_val, hg_loss_val, yolo_loss_val = sess.run(
+                                [summary_op_val,
+                                 loss_mean,
+                                 hg_loss_mean,
+                                 yolo_loss_mean],
+                                feed_dict=val_feed_dict)
+                            log_str_val = "VAL   Loss: {:<.3e}  HGLoss: {:<.3e}  " \
+                                          "YOLOLoss: {:<.3e}".format(loss_val, hg_loss_val, yolo_loss_val)
+                            print(log_str_val)
+                        else:
+                            summary_str_val, _ = sess.run([summary_op_val, loss_mean], feed_dict=val_feed_dict)
+
+                        # caculate AP for all val set
+                        # if step % (self.summary_iter * 10) == 0:
+                        #     print("AP: ", self.evaluate())
+
                     else:
-                        summary_str_val, _ = self.sess.run(
-                            [self.summary_op_val,
-                             self.net.loss],
-                            feed_dict=val_feed_dict)
-
-                    # caculate AP for all val set
-                    # if step % (self.summary_iter * 10) == 0:
-                    #     print("AP: ", self.evaluate())
+                        # train
+                        summary_str, _ = sess.run([summary_op, train_op], feed_dict=feed_dict)
+                        # val
+                        summary_str_val, _ = sess.run([summary_op_val, loss_mean], feed_dict=val_feed_dict)
+                    self.writer.add_summary(summary_str, step)
+                    self.writer.add_summary(summary_str_val, step)
 
                 else:
-                    # train
-                    summary_str, _ = self.sess.run(
-                        [self.summary_op, self.train_op],
-                        feed_dict=feed_dict)
+                    sess.run(train_op, feed_dict=feed_dict)
 
-                    # val
-                    summary_str_val, _ = self.sess.run(
-                        [self.summary_op_val,
-                         self.net.loss],
-                        feed_dict=val_feed_dict)
-                self.writer.add_summary(summary_str, step)
-                self.writer.add_summary(summary_str_val, step)
-
-            else:
-                self.sess.run(self.train_op, feed_dict=feed_dict)
-
-            if step % self.save_iter == 0:
-                print('{} Saving checkpoint file to: {}'.format(
-                    datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
-                    self.output_dir))
-                self.saver.save(
-                    self.sess, self.ckpt_file, global_step=self.global_step)
-            step += 1
-        self.coord.request_stop()
-        self.coord.join(self.threads)
+                if step % self.save_iter == 0:
+                    print('{} Saving checkpoint file to: {}'.format(
+                        datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
+                        self.output_dir))
+                    saver.save(
+                        sess, self.ckpt_file, global_step=self.global_step)
+                step += 1
+            coord.request_stop()
+            coord.join(threads)
 
     def save_cfg(self):
 
@@ -203,12 +233,12 @@ class Solver(object):
             print('not support now')
         return list(set(variables_to_train))
 
-    def restore(self):
+    def restore(self, sess, saver):
         if self.restore_mode == 'all':
             print('restore all parameters')
             ckpt = tf.train.get_checkpoint_state(self.weights_file)
             if ckpt and ckpt.model_checkpoint_path:
-                self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+                saver.restore(sess, ckpt.model_checkpoint_path)
         # always not use it, because restore_mode always is all
         else:
             print('restore scope parameters')
@@ -216,10 +246,38 @@ class Solver(object):
                                            self.get_tuned_variables(),
                                            ignore_missing_vars=True)
 
+    @staticmethod
+    def average_gradients(tower_grads):
+        average_grads = []
+        for grad_and_vars in zip(*tower_grads):
+            grads = []
+            for g, _ in grad_and_vars:
+                expend_g = tf.expand_dims(g, 0)
+                grads.append(expend_g)
+            grad = tf.concat(grads, 0)
+            grad = tf.reduce_mean(grad, 0)
+            v = grad_and_vars[0][1]
+            grad_and_var = (grad, v)
+            average_grads.append(grad_and_var)
+        return average_grads
+
+    @staticmethod
+    def average_loss(tower_loss):
+        average_loss = []
+        for loss in zip(*tower_loss):
+            losses = []
+            for l in loss:
+                expend_l = tf.expand_dims(l, 0)
+                losses.append(expend_l)
+            losses_contact = tf.concat(losses, 0)
+            losses_mean = tf.reduce_mean(losses_contact, 0)
+            average_loss.append(losses_mean)
+        return tuple(average_loss)
+
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-csm', '--coord_sigmoid', default=False, type=bool)
+    parser.add_argument('-csm', '--coord_sigmoid', default=False, action='store_true')
     parser.add_argument('-ims', '--image_size', default=256, type=int)
     parser.add_argument('-bpc', '--boxes_per_cell', default=2, type=int)
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')

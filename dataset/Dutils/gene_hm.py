@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import utils.config as cfg
+
 HM_HEIGHT = cfg.HM_HEIGHT
 HM_WIDTH = cfg.HM_WIDTH
 nPoints = 16
@@ -8,7 +9,7 @@ COCO_NPOINTS = cfg.COCO_NPOINTS
 
 
 def resize_label(label):
-    return label * 64 / 256.
+    return label * HM_HEIGHT / cfg.IMAGE_SIZE
 
 
 def _makeGaussian(height, width, sigma, center):
@@ -37,7 +38,7 @@ def one_point_hm(height, width, joints):
     r_hm = np.zeros((num_joints, height, width), dtype=np.float32)
     for i in range(num_joints):
         r_hm[i] = np.zeros((height, width), dtype=np.float32)
-        if np.array_equal(joints[i], [0, 0]) or np.array_equal(joints[i], [255, 0]):
+        if np.array_equal(joints[i], [0, 0]) or np.array_equal(joints[i], [float(cfg.IMAGE_SIZE - 1), 0]):
             continue
         else:
             x = math.floor(joints[i][0]) if joints[i][0] - int(joints[i][0]) < 0.5 else math.ceil(joints[i][0])
@@ -51,7 +52,7 @@ def generate_hm(height, width, joints, maxlenght, num_joints=0):
     num_joints = joints.shape[0] if num_joints == 0 else num_joints
     r_hm = np.zeros((num_joints, height, width), dtype=np.float32)
     for i in range(num_joints):
-        if np.array_equal(joints[i], [0, 0]) or np.array_equal(joints[i], [64., 0]):
+        if np.array_equal(joints[i], [0, 0]) or np.array_equal(joints[i], [float(HM_HEIGHT), 0]):
             r_hm[i] = np.zeros((height, width), dtype=np.float32)
         elif np.array_equal(joints[i], [HM_WIDTH, 0]):
             r_hm[i] = np.zeros((height, width), dtype=np.float32)
@@ -68,7 +69,7 @@ def batch_genehm(batch_size, l, if_gauss):
     label = np.zeros((batch_size, nPoints, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
     if if_gauss:
         for i in range(batch_size):
-            label[i] = generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i], 256)
+            label[i] = generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i], cfg.IMAGE_SIZE)
     else:
 
         for i in range(batch_size):
@@ -77,17 +78,16 @@ def batch_genehm(batch_size, l, if_gauss):
 
 
 def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_id, if_gauss=True):
-
     re_label = resize_label(l)
     num_points = COCO_NPOINTS
     label = np.zeros((batch_size, num_points, HM_HEIGHT, HM_WIDTH), dtype=np.float32)
-    b_bbox_resize = b_bbox # * 64 / 256
+    b_bbox_resize = b_bbox  # * 64 / 256
     b_bbox_resize_4 = np.reshape(b_bbox_resize, (batch_size, -1, 4))
     # b_bbox_resize_4 = b_bbox_resize_4.astype(np.int32)
     if if_gauss:
         for i in range(batch_size):
-            pic_num_points_inbox = b_num_points_inbox[i] # yizhang tupian zhong meige kuang duiying de dian de geshu
-            pic_bbox = b_bbox_resize_4[i] # yizhang tupian zhong de kuang de xinxi
+            pic_num_points_inbox = b_num_points_inbox[i]  # yizhang tupian zhong meige kuang duiying de dian de geshu
+            pic_bbox = b_bbox_resize_4[i]  # yizhang tupian zhong de kuang de xinxi
             pic_obj_c_id = b_category_id[i]
             for i_p in range(cfg.COCO_MAX_OBJECT_PER_PIC):
                 num_points_inbox = pic_num_points_inbox[i_p]
@@ -105,9 +105,10 @@ def batch_genehm_for_coco(batch_size, l, b_bbox, b_num_points_inbox, b_category_
                     height = y_max - y_min
                     if width > 0 and height > 0:
                         label[i, :, y_min:y_min + height, x_min:x_min + width] += -0.001
-                elif num_points_inbox: # ruguo youdian shengcheng gaosi
-                    label[i] += generate_hm(HM_HEIGHT, HM_WIDTH, re_label[i][i_p*num_points:i_p*num_points+num_points],
-                                        64, num_points)
+                elif num_points_inbox:  # ruguo youdian shengcheng gaosi
+                    label[i] += generate_hm(HM_HEIGHT, HM_WIDTH,
+                                            re_label[i][i_p * num_points:i_p * num_points + num_points],
+                                            HM_HEIGHT, num_points)
                 else:
                     continue
 

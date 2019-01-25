@@ -21,10 +21,10 @@ COCO_MAX_OBJECT_PER_PIC = 100
 COCO_EXAMPLES = 117266
 COCO_BATCH_SIZE = 20
 COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
-# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
-# COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
-COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord_only_person/train/'
-COCO_VAL_FILENAME = '/home/new/dataset/tfrecord_only_person/val/'
+COCO_TRAIN_FILENAME = '/root/dataset/tfrecord_only_person/train/'
+COCO_VAL_FILENAME = '/root/dataset/tfrecord_only_person/val/'
+# COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord_only_person/train/'
+# COCO_VAL_FILENAME = '/home/new/dataset/tfrecord_only_person/val/'
 # ------------------------------------------------------------
 
 
@@ -75,29 +75,31 @@ NUM_FEATS = 256  # hourglass 中特征图的数量
 # ------------------------------------------------------------
 # solver parameter
 GPU = '0'
+GPU_NUMBER = 1
 LEARNING_RATE = 2.5e-4
 DECAY_STEPS = 10000
 DECAY_RATE = 1
 STAIRCASE = True
-MAX_ITER = 200000
+MAX_ITER = 300000
 SUMMARY_ITER = 10
-SAVE_ITER = 30000
+SAVE_ITER = 10000
 # ------------------------------------------------------------
 
 
 # ------------------------------------------------------------
 # test parameter
 
-THRESHOLD = 0.7
+THRESHOLD = 0.8
 IOU_THRESHOLD_NMS = 0.2
-HG_THRESHOLD = 0.4
-HG_FACTOR = 1.2
+HG_THRESHOLD = 0.2
+HG_FACTOR_HEIGHT = 1.3
+HG_FACTOR_WIDTH = 0.8
 
 IOU_THRESHOLD_GT = 0.5
-# COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
-# COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
-COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
-COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
+COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
+# COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+# COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
 
 # PASCAL_PATH = '/root/dataset/data/pascal_voc/'
 PASCAL_PATH = '/home/new/dataset/data/pascal_voc/'
