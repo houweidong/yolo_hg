@@ -78,6 +78,7 @@ class Solver(object):
             # global_step = tf.train.get_or_create_global_step()
             tower_grads = []
             tower_loss = []
+            tower_loss_board = []
 
             labels_det_hd, labels_kp_hd = self.define_holder_det_kp()
             images_hd = self.net.images
@@ -91,22 +92,18 @@ class Solver(object):
                             y_kp = labels_kp_hd[i * self.net.batch_size:(i + 1) * self.net.batch_size]
                             hg_logits, yolo_logits = self.net.build_network(x)
                             tf.get_variable_scope().reuse_variables()
-                            loss, hg_loss, yolo_loss = \
+                            loss, hg_loss, yolo_loss, loss_board = \
                                 self.net.loss_layer([hg_logits, yolo_logits],
                                                     [y_det, y_kp], scope)
                             tower_loss.append((loss, hg_loss, yolo_loss))
+                            tower_loss_board.append(loss_board)
                             grads = opt.compute_gradients(loss)
                             tower_grads.append(grads)
-                            # if i == 0:
-                            #     logits_test = conv_net(_x, False)
-                            #     correct_prediction = tf.equal(tf.argmax(logits_test, 1), tf.argmax(_y, 1))
-                            #     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             grads = self.average_gradients(tower_grads)
             loss_mean, hg_loss_mean, yolo_loss_mean = self.average_loss(tower_loss)
+            summary_op, summary_op_val = self.define_summary_op(tower_loss_board)
             train_op = opt.apply_gradients(grads)
-            # have to define this after the net define which has the summary scalar define
-            summary_op = tf.summary.merge_all('train')
-            summary_op_val = tf.summary.merge_all('val')
+
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=None)
         config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
         with tf.Session(config=config) as sess:
@@ -246,6 +243,21 @@ class Solver(object):
                                            self.get_tuned_variables(),
                                            ignore_missing_vars=True)
 
+    def define_summary_op(self, tower_loss_board):
+        average_loss_board = Solver.average_loss(tower_loss_board)
+        name_lt = ['train', 'val']
+        loss_name = ['/yolo/object_loss', '/yolo/noobject_loss', '/yolo/coord_loss',
+                     '/yolo/yolo_loss', '/hg_loss', '/total_loss']
+        if self.net.num_class != 1:
+            loss_name.insert(0, '/yolo/class_loss')
+        for name in name_lt:
+            for i, l in enumerate(average_loss_board):
+                tf.summary.scalar(name + loss_name[i], l, collections=[name])
+        # have to define this after the net define which has the summary scalar define
+        summary_op = tf.summary.merge_all('train')
+        summary_op_val = tf.summary.merge_all('val')
+        return summary_op, summary_op_val
+
     @staticmethod
     def average_gradients(tower_grads):
         average_grads = []
@@ -272,7 +284,7 @@ class Solver(object):
             losses_contact = tf.concat(losses, 0)
             losses_mean = tf.reduce_mean(losses_contact, 0)
             average_loss.append(losses_mean)
-        return tuple(average_loss)
+        return average_loss
 
 
 def main():
@@ -295,7 +307,7 @@ def main():
     parser.add_argument('--train_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--restore_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--log_dir', type=str)
-    parser.add_argument('--gpu', type=str)
+    parser.add_argument('--gpu', default='0', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     parser.add_argument('--factor', default=0.3, type=float)
     parser.add_argument('--ob_f', default=20.0, type=float)

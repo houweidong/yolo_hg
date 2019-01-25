@@ -1,20 +1,17 @@
 import numpy as np
-from utils import config as cfg
 from model.Mutils.submodules_multi_gpu import *
 from model.Mutils import submodules_multi_gpu
-
+from collections import OrderedDict
 
 class HOURGLASSYOLONet(object):
 
     def __init__(self, train_eval_visual='train'):
         self.train_eval_visual = train_eval_visual
         self.l2 = tf.contrib.layers.l2_regularizer(cfg.L2_FACTOR) if cfg.L2 else None
-        # self.gpu_number = cfg.GPU_NUMBER
         self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.coord_sigmoid = cfg.COORD_SIGMOID
         self.wh_sigmoid = cfg.WH_SIGMOID
         self.r_object = cfg.R_OBJECT
-        # self.alpha_object = 5.0
         self.loss_factor = cfg.LOSS_FACTOR
         self.nMoudel = cfg.NUM_MOUDEL  # hourglass 中residual 模块的数量
         self.nStack = cfg.NUM_STACK  # hourglass 堆叠的层数
@@ -329,20 +326,15 @@ class HOURGLASSYOLONet(object):
 
             loss = tf.add_n(tf.get_collection('losses', scope))
 
-            # summary for train and val
-        name_lt = ['train', 'val']
-        for name in name_lt:
-            if self.num_class != 1:
-                tf.summary.scalar(name + '/yolo/class_loss', class_loss, collections=[name])
-            tf.summary.scalar(name + '/yolo/object_loss', object_loss, collections=[name])
-            tf.summary.scalar(name + '/yolo/noobject_loss', noobject_loss, collections=[name])
-            tf.summary.scalar(name + '/yolo/coord_loss', coord_loss, collections=[name])
-            tf.summary.scalar(name + '/yolo/yolo_loss', yolo_loss, collections=[name])
-            tf.summary.histogram(name + '/yolo/iou', iou_predict_truth, collections=[name])
-            tf.summary.scalar(name + '/hg_loss', hg_loss, collections=[name])
-            tf.summary.scalar(name + '/total_loss', loss, collections=[name])
-        # tf.summary.histogram('boxes_delta_x', boxes_delta[..., 0], collections='train')
-        # tf.summary.histogram('boxes_delta_y', boxes_delta[..., 1], collections='train')
-        # tf.summary.histogram('boxes_delta_w', boxes_delta[..., 2], collections='train')
-        # tf.summary.histogram('boxes_delta_h', boxes_delta[..., 3], collections='train')
-        return loss, hg_loss, yolo_loss
+        # summary for train and val
+        loss_list = []
+        if self.num_class != 1:
+            loss_list.append(class_loss)
+        loss_list.append(object_loss)
+        loss_list.append(noobject_loss)
+        loss_list.append(coord_loss)
+        loss_list.append(yolo_loss)
+        loss_list.append(hg_loss)
+        loss_list.append(loss)
+
+        return loss, hg_loss, yolo_loss, loss_list

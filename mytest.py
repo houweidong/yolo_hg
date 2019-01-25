@@ -707,6 +707,6 @@
 #     # train_single()
 #     train()
 
-a = ''
-print(len(list(filter(None, a.split(',')))))
-print(len(a.split(',')))
+a = [1 ,2 ,3]
+a.insert(0, 1111)
+print(a)

@@ -1,5 +1,4 @@
 import numpy as np
-from utils import config as cfg
 from model.Mutils.submodules import *
 from model.Mutils import submodules
 
@@ -10,8 +9,8 @@ class HOURGLASSYOLONet(object):
         self.l2 = tf.contrib.layers.l2_regularizer(cfg.L2_FACTOR) if cfg.L2 else None
         self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.coord_sigmoid = cfg.COORD_SIGMOID
+        self.wh_sigmoid = cfg.WH_SIGMOID
         self.r_object = cfg.R_OBJECT
-        # self.alpha_object = 5.0
         self.loss_factor = cfg.LOSS_FACTOR
         self.nMoudel = cfg.NUM_MOUDEL  # hourglass 中residual 模块的数量
         self.nStack = cfg.NUM_STACK  # hourglass 堆叠的层数
@@ -221,9 +220,16 @@ class HOURGLASSYOLONet(object):
             predict_boxes_base = tf.reshape(
                 predicts[:, :, :, self.boundary2:],
                 [self.batch_size, self.cell_size, self.cell_size, self.boxes_per_cell, 4])
-            if self.coord_sigmoid:
+            if self.coord_sigmoid and self.wh_sigmoid:
+                # predict_boxes_xy = tf.sigmoid(predict_boxes_base[..., 0:2])
+                # predict_boxes = tf.concat([predict_boxes_xy, predict_boxes_base[..., 2:]], 4)
+                predict_boxes = tf.sigmoid(predict_boxes_base)
+            elif self.coord_sigmoid:
                 predict_boxes_xy = tf.sigmoid(predict_boxes_base[..., 0:2])
                 predict_boxes = tf.concat([predict_boxes_xy, predict_boxes_base[..., 2:]], 4)
+            elif self.wh_sigmoid:
+                predict_boxes_wh = tf.sigmoid(predict_boxes_base[..., 2:4])
+                predict_boxes = tf.concat([predict_boxes_base[..., 0:2], predict_boxes_wh], 4)
             else:
                 predict_boxes = predict_boxes_base
 
