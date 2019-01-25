@@ -277,7 +277,8 @@ class Solver(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-csm', '--coord_sigmoid', default=False, action='store_true')
+    parser.add_argument('-csm', '--coord_sigmoid', action='store_true')
+    parser.add_argument('-whsm', '--wh_sigmoid', action='store_true')
     parser.add_argument('-ims', '--image_size', default=256, type=int)
     parser.add_argument('-bpc', '--boxes_per_cell', default=2, type=int)
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')
@@ -301,6 +302,8 @@ def main():
     parser.add_argument('--noob_f', default=1.0, type=float)
     parser.add_argument('--coo_f', default=100.0, type=float)
     parser.add_argument('--cl_f', default=40.0, type=float)
+    parser.add_argument('-lr', '--learning_rate', default=2.5e-4, type=float)
+    parser.add_argument('-lrd', '--learning_rate_decay', default=1, type=float)
     args = parser.parse_args()
 
     update_config(args)

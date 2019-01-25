@@ -55,8 +55,13 @@ class Detector(object):
             output[:, :, self.net.boundary2:],
             (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
 
-        if self.net.coord_sigmoid:
-            boxes[..., 0:2] = tf.sigmoid(boxes[..., 0:2])
+        if self.net.coord_sigmoid and self.net.wh_sigmoid:
+            # boxes[..., 0:2] = 1 / (1 + np.exp(-np.clip(boxes[..., 0:2], -50, 50)))
+            boxes = 1 / (1 + np.exp(-np.clip(boxes, -50, 50)))
+        elif self.net.coord_sigmoid:
+            boxes[..., 0:2] = 1 / (1 + np.exp(-np.clip(boxes[..., 0:2], -50, 50)))
+        elif self.net.wh_sigmoid:
+            boxes[..., 2:4] = 1 / (1 + np.exp(-np.clip(boxes[..., 2:4], -50, 50)))
 
         offset = np.array(
             [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.boxes_per_cell)

@@ -17,7 +17,7 @@ class Coco(object):
         # self.box_hm_sigma = cfg.BOX_HOT_MAP_SIGMA
         # self.box_hm_prob = self.prepare_prob()
         # self.box_hm_prob_size = 2 * self.box_hm_level + 1
-        self.coco_batch_size = cfg.COCO_BATCH_SIZE
+        self.coco_batch_size = cfg.COCO_BATCH_SIZE * cfg.GPU_NUMBER
         self.image_size = cfg.IMAGE_SIZE
         self.cell_size = cfg.CELL_SIZE
         self.boxes_per_cell = cfg.BOXES_PER_CELL
