@@ -9,6 +9,7 @@ class Detector(object):
     def __init__(self, net, weight_file):
         # self.focal_loss = cfg.BOX_FOCAL_LOSS
         self.net = net
+        self.hg_logits, self.yolo_logits = self.net.build_network(self.net.images)
         self.weights_file = weight_file
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
@@ -23,7 +24,7 @@ class Detector(object):
         :param batch[batch_size, ]  (image[width, height, 3] numpy)
         :return: results[batch_size, ]  sorted according prob(bboxes[n, 4], prob[n, ], class[n, ]  numpy)
         """
-        net_output = self.sess.run(self.net.yolo_logits,
+        net_output = self.sess.run(self.yolo_logits,
                                    feed_dict={self.net.images: np.array(batch)})
         results = []
         for i in range(net_output.shape[0]):

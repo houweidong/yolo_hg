@@ -102,7 +102,7 @@ class Solver(object):
             grads = self.average_gradients(tower_grads)
             loss_mean, hg_loss_mean, yolo_loss_mean = self.average_loss(tower_loss)
             summary_op, summary_op_val = self.define_summary_op(tower_loss_board)
-            train_op = opt.apply_gradients(grads)
+            train_op = opt.apply_gradients(grads, self.global_step)
 
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=None)
         config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)

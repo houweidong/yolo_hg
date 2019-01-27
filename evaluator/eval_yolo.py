@@ -2,7 +2,7 @@ from Eutils.pathmagic import context
 with context():
     import argparse
     import numpy as np
-    from model.hourglass_yolo_net import HOURGLASSYOLONet
+    from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
     from evaluator.Eutils.pascal_val import PASCAL_VAL
     from evaluator.Eutils.coco_val import COCO_VAL
     from evaluator.Eutils.detector import Detector
