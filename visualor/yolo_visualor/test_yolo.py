@@ -1,12 +1,14 @@
-import os
-import cv2
-import argparse
-import numpy as np
-import tensorflow as tf
-from utils import config as cfg
-from utils.config_utils import get_config
-from model.hourglass_yolo_net import HOURGLASSYOLONet
-from utils.timer import Timer
+from Vtuils.pathmagic import context
+with context():
+    import os
+    import cv2
+    import argparse
+    import numpy as np
+    import tensorflow as tf
+    from utils import config as cfg
+    from utils.config_utils import get_config
+    from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
+    from utils.timer import Timer
 
 
 class Detector(object):
@@ -14,6 +16,7 @@ class Detector(object):
     def __init__(self, net, weight_file):
         # self.fc = cfg.BOX_FOCAL_LOSS
         self.net = net
+        self.hg_logits, self.yolo_logits = self.net.build_network(self.net.images)
         self.weights_file = weight_file
         self.threshold = cfg.THRESHOLD
         self.hg_threshold = cfg.HG_THRESHOLD
@@ -82,7 +85,7 @@ class Detector(object):
         return yolo_result, (rows, cols)
 
     def detect_from_cvmat(self, inputs):
-        yolo_output, hg_output = self.sess.run([self.net.yolo_logits, self.net.hg_logits],
+        yolo_output, hg_output = self.sess.run([self.yolo_logits, self.hg_logits],
                                                feed_dict={self.net.images: inputs})
         yolo_results = []
         hg_results = []
@@ -270,8 +273,8 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-180000", type=str)
-    parser.add_argument('--weight_dir', default='../../log_bhm/4.5_0.3_0.8_conv32_fc_l2_0.005_bhm2/', type=str)
+    parser.add_argument('--weights', default="hg_yolo-150000", type=str)
+    parser.add_argument('--weight_dir', default='../../log_wh_sigmoid1/0.8_0.08_0.03_conv_l2_0.005/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
@@ -287,18 +290,18 @@ def main():
     detector = Detector(yolo, os.path.join(args.weight_dir, args.weights))
 
     # detect from camera
-    cap = cv2.VideoCapture(-1)
-    detector.camera_detector(cap)
+    # cap = cv2.VideoCapture(-1)
+    # detector.camera_detector(cap)
 
     # detect from image file
-    # ims_pth = "/home/new/dataset/val2017"
+    ims_pth = "/home/new/dataset/val2017"
     # ims_pth = "/root/dataset/val2017"
     # ims_pth = '/root/dataset/data/pascal_voc/VOCdevkit/VOC2012/JPEGImages/'
     # ims_pth = "../pictures"
     # ims_pth = '/root/dataset/front-test/'
     # ims_pth = "../pictures1/"
     # imname = 'pictures/2.jpg'
-    # detector.images_detector(ims_pth)
+    detector.images_detector(ims_pth)
 
 
 if __name__ == '__main__':

@@ -5,8 +5,7 @@ import sys
 # add project root to search path
 class context:
     def __enter__(self):
-        # get the args's absolute path
-        pro_root = os.path.dirname(os.path.realpath('.'))
+        pro_root = '/home/new/dev/weidong/yolo_hg'
         sys.path.insert(0, pro_root)
 
     def __exit__(self, *args):
