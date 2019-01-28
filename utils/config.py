@@ -46,11 +46,13 @@ BOXES_PER_CELL = 2
 COORD_SIGMOID = False
 WH_SIGMOID = False
 BOX_FOCAL_LOSS = False
+# For yolo
 BOX_HOT_MAP = False
 BOX_HOT_MAP_LEVEL = 0
-# BOX_HOT_MAP_LEVEL = 2
-# BOX_HOT_MAP_GAUSSIAN = True
-# BOX_HOT_MAP_SIGMA = 3
+# For keypoints
+HG_HOT_MAP_DIFF_LEVEL = 0
+HG_HOT_MAP_LEVEL = 1
+
 OBJECT_SCALE = 20.0
 NOOBJECT_SCALE = 1.0
 CLASS_SCALE = 40.0
@@ -61,10 +63,10 @@ R_OBJECT = 2
 # ALPHA_OBJECT = 5
 
 # ....hourglass parameter
-WIDTH = IMAGE_SIZE
-HEIGHT = IMAGE_SIZE
-HM_HEIGHT = IMAGE_SIZE // 4
-HM_WIDTH = IMAGE_SIZE // 4
+# WIDTH = IMAGE_SIZE
+# HEIGHT = IMAGE_SIZE
+# HM_SIZE = IMAGE_SIZE // 4
+# HM_WIDTH = IMAGE_SIZE // 4
 COCO_NPOINTS = 17
 HG_CELL_SIZE = IMAGE_SIZE // 4
 NUM_MOUDEL = 1  # hourglass 中residual 模块的数量
@@ -97,9 +99,9 @@ HG_FACTOR_HEIGHT = 1.3
 HG_FACTOR_WIDTH = 0.8
 
 IOU_THRESHOLD_GT = 0.5
-# COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
 # COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
-COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+# COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
 COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
 
 # PASCAL_PATH = '/root/dataset/data/pascal_voc/'

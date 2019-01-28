@@ -1,46 +1,10 @@
 import tensorflow as tf
-from dataset.Dutils import data_enhance,gene_hm
+# from dataset.Dutils import data_enhance,gene_hm
 from utils import config as cfg
 import os
 
-
 """加载一个batchsize的image"""
-WIDTH = cfg.WIDTH
-HEIGHT = cfg.HEIGHT
-HM_HEIGHT = cfg.HM_HEIGHT
-HM_WIDTH = cfg.HM_WIDTH
 MAX_OBJECT = cfg.COCO_MAX_OBJECT_PER_PIC
-# MAX = cfg.COCO_MAX_PERSON_PER_PIC
-
-
-def _read_single_sample(samples_dir):
-    ab_dir = []
-    for tr_path in os.listdir(samples_dir):
-        ab_dir.append(os.path.join(samples_dir, tr_path))
-    filename_quene = tf.train.string_input_producer(ab_dir)
-    reader = tf.TFRecordReader()
-    _, serialize_example = reader.read(filename_quene)
-    features = tf.parse_single_example(
-        serialize_example,
-        features={
-            'image/height': tf.FixedLenFeature([], tf.int64),
-            'image/width': tf.FixedLenFeature([], tf.int64),
-            'image/encoded': tf.FixedLenFeature([], tf.string),
-            'image/object/bboxes': tf.FixedLenFeature([MAX_OBJECT * 4], tf.float32),
-            'image/object/keypoints': tf.FixedLenFeature([MAX_OBJECT * cfg.COCO_NPOINTS * 3], tf.int64)
-
-        }
-    )
-    width = tf.cast(features['image/width'], tf.int32)
-    height = tf.cast(features['image/height'], tf.int32)
-    image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
-    image = tf.reshape(image, [height, width, 3])  # ！reshape 先列后行
-    xxyy = tf.cast(features['image/object/bboxes'], tf.float32)
-    keypoints = tf.cast(features['image/object/keypoints'], tf.int32)
-
-    return image, keypoints, width, height, xxyy
-    # print(img.shape)
-    # print(label)
 
 
 def _read_single_sample_all_categories(samples_dir):
@@ -77,42 +41,29 @@ def _read_single_sample_all_categories(samples_dir):
 
 
 def resize_img_label(image, label, width, height, gt_bbox):
-    new_img = tf.image.resize_images(image, [WIDTH, HEIGHT], method=1)
-    x = tf.reshape(label[:, 0] * float(WIDTH) / tf.cast(width, tf.float32), (-1, 1))
-    y = tf.reshape(label[:, 1] * float(HEIGHT) / tf.cast(height, tf.float32), (-1, 1))
-    re_label = tf.concat([x, y], axis=1)
-    gt_bbox = tf.cast(gt_bbox, tf.float32)
-    b_x = tf.reshape(gt_bbox[:, 0] * float(WIDTH) / tf.cast(width, tf.float32), (-1, 1))
-    b_y = tf.reshape(gt_bbox[:, 1] * float(HEIGHT) / tf.cast(height, tf.float32), (-1, 1))
-    re_bbox = tf.concat([b_x, b_y], axis=1)
-
-    return new_img, re_label, re_bbox
-
-
-def batch_samples(batch_size, filename, shuffle=False):
-    """
-    filename:tfrecord文件名
-    """
-
-    image, label, width, height, bbox = _read_single_sample(filename)
-    # image, label, width, height, bbox, category_id, num_keypoints = _read_single_sample_all_categories(filename)
     label = tf.cast(tf.reshape(label, [-1, 3]), tf.float32)
-    bbox = tf.cast(tf.reshape(bbox, (-1, 2)), tf.float32)
-    # [image, label, bbox], new_width, new_height = data_enhance.do_enhance(image, label, width, height, True, bbox)
-    # image, label, bbox = resize_img_label(image, label, width, height, bbox)
-    image, label, bbox = resize_img_label(image, label, width, height, bbox)
-    # label.set_shape([cfg.COCO_NPOINTS * MAX, 2])
+    gt_bbox = tf.cast(tf.reshape(gt_bbox, [-1, 2]), tf.float32)
+    new_img = tf.image.resize_images(image, [cfg.IMAGE_SIZE, cfg.IMAGE_SIZE], method=1)
 
-    label = tf.cast(tf.reshape(label, [cfg.COCO_NPOINTS * MAX_OBJECT, 2]), tf.float32)
-    bbox = tf.cast(tf.reshape(bbox, (-1, 2)), tf.float32)
-    if shuffle:
-        b_image, b_label, b_bbox = tf.train.shuffle_batch([image, label, bbox], batch_size,
-                                                          min_after_dequeue=batch_size * 5, num_threads=2,
-                                                          capacity=batch_size * 300)
-    else:
-        b_image, b_label, b_bbox = tf.train.batch([image, label, bbox], batch_size, num_threads=2)
+    x = tf.reshape(label[:, 0], (-1, 1))
+    y = tf.reshape(label[:, 1], (-1, 1))
+    re_label_origin = tf.concat([x, y], axis=1)
+    # translate the key points coord to continuous form
+    pad = tf.constant(0, dtype=tf.float32, shape=[cfg.COCO_NPOINTS * MAX_OBJECT, 2])
+    mask_int = tf.cast(tf.equal(re_label_origin, pad), tf.int32)
+    mask_int_1d = tf.cast(tf.reduce_sum(mask_int, 1), tf.bool)
+    re_label_origin = tf.where(mask_int_1d, pad, re_label_origin + tf.constant(0.5, dtype=tf.float32))
 
-    return b_image, b_bbox, b_label
+    x = tf.reshape(re_label_origin[:, 0] * float(cfg.IMAGE_SIZE) / tf.cast(width, tf.float32), (-1, 1))
+    y = tf.reshape(re_label_origin[:, 1] * float(cfg.IMAGE_SIZE) / tf.cast(height, tf.float32), (-1, 1))
+    re_label = tf.concat([x, y], axis=1)
+
+    b_x = tf.reshape(gt_bbox[:, 0] * float(cfg.IMAGE_SIZE) / tf.cast(width, tf.float32), (-1, 1))
+    b_y = tf.reshape(gt_bbox[:, 1] * float(cfg.IMAGE_SIZE) / tf.cast(height, tf.float32), (-1, 1))
+    re_bbox = tf.concat([b_x, b_y], axis=1)
+    # re_label = tf.reshape(re_label, [cfg.COCO_NPOINTS * MAX_OBJECT, 2])
+    # re_bbox = tf.reshape(re_bbox, (-1, 2))
+    return new_img, re_label, re_bbox
 
 
 def batch_samples_all_categories(batch_size, filename, shuffle=False):
@@ -122,16 +73,7 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 
     image, label, width, height, bbox, category_id, num_keypoints = \
         _read_single_sample_all_categories(filename)
-
-    label = tf.cast(tf.reshape(label, [-1, 3]), tf.float32)
-    bbox = tf.reshape(bbox, [-1, 2])
-    # bbox = tf.cast(tf.reshape(bbox, [-1, 2]), tf.int64)
     image, label, bbox = resize_img_label(image, label, width, height, bbox)
-
-    # label.set_shape([cfg.COCO_NPOINTS * MAX, 2])
-    label = tf.cast(tf.reshape(label, [cfg.COCO_NPOINTS * MAX_OBJECT, 2]), tf.float32)
-    bbox = tf.reshape(bbox, (-1, 2))
-    # category_id = tf.cast(category_id, tf.int64)
 
     if shuffle:
         b_image, b_bbox, category_id, b_label, b_num_kpoints = \
@@ -147,20 +89,24 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 
 
 # # # """测试加载图像"""
-
+# from dataset.coco import Coco
 # import matplotlib.pyplot as plt
 # import numpy as np
 # from PIL import Image
 #
 # with tf.Session() as sess:  # 开始一个会话
+#     coco = Coco()
+#     coco.coco_batch_size = 1
+#     coco.sess = sess
 #     init_op = tf.global_variables_initializer()
 #     tf.local_variables_initializer().run()
 #     sess.run(init_op)
 #     batch_size = 1
 #
-#     b_image, b_bbox, b_category_id, b_label, b_num_kpoints = batch_samples_all_categories(batch_size,
-#                                              '/root/dataset/tfrecord1/val',
-#                                              False)
+#     b_image, b_bbox, b_category_id, b_label, b_num_kpoints = \
+#         batch_samples_all_categories(batch_size,
+#                                      '/root/dataset/tfrecord_only_person/val',
+#                                      False)
 #
 #     coord = tf.train.Coordinator()
 #     threads = tf.train.start_queue_runners(coord=coord)
@@ -168,7 +114,8 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 #     for i in range(7900):
 #         try:
 #             # 在会话中取出image和label
-#             r_image, r_label, r_bbox, r_num_kpoints, r_category_id = sess.run([b_image, b_label, b_bbox, b_num_kpoints, b_category_id])
+#             r_image, r_label, r_bbox, r_num_kpoints, r_category_id = sess.run(
+#                 [b_image, b_label, b_bbox, b_num_kpoints, b_category_id])
 #             r_bbox = r_bbox * 64 / 256
 #
 #         except tf.errors.OutOfRangeError as info:
@@ -177,7 +124,7 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 #         else:
 #             print(i)
 #             # print(r_category_id)
-#             hm_result = gene_hm.batch_genehm_for_coco(batch_size, r_label, r_bbox, r_num_kpoints, r_category_id)
+#             hm_result = coco.batch_gene_hm_kp(r_label, r_bbox, r_num_kpoints, r_category_id)
 #             for j in range(batch_size):
 #                 or_x = r_label[j][:, 0] * 64 / 256
 #                 or_y = r_label[j][:, 1] * 64 / 256
@@ -227,8 +174,8 @@ def batch_samples_all_categories(batch_size, filename, shuffle=False):
 #     tf.local_variables_initializer().run()
 #     sess.run(init_op)
 #     # tf.local_variables_initializer().run()
-#
-#     b_image, b_bbox, category_id, b_label = \
+#     # b_image, b_bbox, category_id, b_label, b_num_kpoints
+#     b_image, b_bbox, category_id, b_label, _ = \
 #         batch_samples_all_categories(1, '/root/dataset/tfrecord1/val/', False)
 #     # b_image, b_bbox, b_label = \
 #     #     batch_samples(1, '/root/dataset/tfrecord1/val/', False)

@@ -16,7 +16,7 @@ import contextlib2
 import tensorflow as tf
 from utils import config as cfg
 from utils.logger import Logger
-import parser
+import argparse
 
 log = Logger('tfrecord_info.log', level='debug')
 flags = tf.app.flags
@@ -332,6 +332,7 @@ def main(_):
     if not tf.gfile.IsDirectory(os.path.join(FLAGS.output_dir, 'val/')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.output_dir, 'val/'))
 
+    parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--big_person', action='store_true', help='only have above 0.5 person')
 
     # _create_tf_record_from_coco_annotations(
