@@ -288,6 +288,8 @@ class Solver(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-gl', '--hg_hm_diff_level', default=1, type=int)
+    parser.add_argument('-dl', '--hg_hm_level', default=1, type=int)
     parser.add_argument('-md', '--number_models', default=1, type=int)
     parser.add_argument('-ns', '--number_stacks', default=2, type=int)
     parser.add_argument('-nf', '--number_feats', default=256, type=int)

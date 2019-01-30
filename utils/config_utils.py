@@ -12,7 +12,9 @@ def get_config(config_path):
     values = collections.OrderedDict()
     keys = ['ADD_YOLO_POSITION', 'IMAGE_SIZE', 'CELL_SIZE', 'BOXES_PER_CELL', 'LOSS_FACTOR', 'LEARNING_RATE',
             'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
-            'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL', 'L2', 'L2_FACTOR', 'COORD_SIGMOID', 'WH_SIGMOID']
+            'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL',
+            'HG_HOT_MAP_DIFF_LEVEL', 'HG_HOT_MAP_LEVEL',
+            'L2', 'L2_FACTOR', 'COORD_SIGMOID', 'WH_SIGMOID']
     values = values.fromkeys(keys)
     for line in open(config):
         name, value = line.split(': ')[0], line.split(': ')[1]
@@ -27,6 +29,8 @@ def get_config(config_path):
     cfg.BOX_FOCAL_LOSS = str_to_bool(values['BOX_FOCAL_LOSS'])
     cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     cfg.BOXES_PER_CELL = int(values['BOXES_PER_CELL'])
+    cfg.HG_HOT_MAP_DIFF_LEVEL = int(values['HG_HOT_MAP_DIFF_LEVEL'])
+    cfg.HG_HOT_MAP_LEVEL = int(values['HG_HOT_MAP_LEVEL'])
     cfg.COORD_SIGMOID = str_to_bool(values['COORD_SIGMOID'])
     cfg.WH_SIGMOID = str_to_bool(values['WH_SIGMOID'])
     strings = config_path.split('/')[2] + '  '
@@ -77,6 +81,8 @@ def update_config(args):
     cfg.DECAY_RATE = args.learning_rate_decay
     cfg.WH_SIGMOID = args.wh_sigmoid
     cfg.GPU_NUMBER = len(list(filter(None, args.gpu.split(','))))
+    cfg.HG_HOT_MAP_DIFF_LEVEL = args.hg_hm_diff_level
+    cfg.HG_HOT_MAP_LEVEL = args.hg_hm_level
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
