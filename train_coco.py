@@ -304,8 +304,8 @@ def main():
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
     parser.add_argument('--position', default="tail", type=str,
-                        choices=["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
-                                 "tail_conv_deep", "tail_conv_deep_fc", "tail_conv_32", "tail_conv_16"])
+                        choices=["tail", "tail_tsp", "tail_down4", "tail_tsp_self", "tail_down16_v2",
+                                 "tail_conv_deep", "tail_conv_deep_fc", "tail_down8", "tail_down16"])
     parser.add_argument('--train_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--restore_mode', default="all", type=str, choices=["all", "scope"])
     parser.add_argument('--log_dir', type=str)

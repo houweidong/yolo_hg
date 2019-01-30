@@ -34,7 +34,7 @@ L2 = True
 L2_FACTOR = 0.5
 LOSS_FACTOR = 0.1
 # support middle | tail | tail_cov | tail_tsp | tail_tsp_self | tail_conv_deep | tail_conv_deep_fc
-ADD_YOLO_POSITION = "tail_conv"
+ADD_YOLO_POSITION = "tail_down16_v2"
 # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
 TRAIN_MODE = 'all'
 RESTORE_MODE = 'all'
@@ -99,9 +99,9 @@ HG_FACTOR_HEIGHT = 1.3
 HG_FACTOR_WIDTH = 0.8
 
 IOU_THRESHOLD_GT = 0.5
-COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+# COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
 # COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
-# COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
 COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
 
 # PASCAL_PATH = '/root/dataset/data/pascal_voc/'

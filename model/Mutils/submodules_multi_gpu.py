@@ -226,7 +226,7 @@ def tail_tsp_self(r_lin, csize_ch, l2):
     return yolo_output_x + yolo_output_y + yolo_output_c
 
 
-def tail_conv(r_lin, csize_ch, l2):
+def tail_down4(r_lin, csize_ch, l2):
     ch, _ = csize_ch
     # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
     r_lin_ch = 256
@@ -243,7 +243,7 @@ def tail_conv(r_lin, csize_ch, l2):
     return result
 
 
-def tail_conv_32(r_lin, csize_ch, l2):
+def tail_down8(r_lin, csize_ch, l2):
     ch, _ = csize_ch
     # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
     r_lin_ch = 256
@@ -262,7 +262,7 @@ def tail_conv_32(r_lin, csize_ch, l2):
     return result
 
 
-def tail_conv_16(r_lin, csize_ch, l2):
+def tail_down16(r_lin, csize_ch, l2):
     ch, _ = csize_ch
     # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
     r_lin_ch = 256
@@ -286,6 +286,41 @@ def tail_conv_16(r_lin, csize_ch, l2):
         conv_down = conv2(max_p, 1, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch, l2)
     with tf.variable_scope('result'):
         result = conv2(conv_down, 1, [1, 1, 1, 1], r_lin_ch, ch, l2)
+    return result
+
+
+def tail_down16_v2(r_lin, csize_ch, l2):
+    ch, _ = csize_ch
+    # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
+    r_lin_ch = 256
+    with tf.variable_scope('down1_cv1'):
+        down1_cv1 = conv2(r_lin, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2, l2)
+    with tf.variable_scope('down1_cv2'):
+        down1_cv2 = conv2(down1_cv1, 1, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch, l2)
+    with tf.variable_scope('down1_cv3'):
+        down1_cv3 = conv2(down1_cv2, 3, [1, 1, 1, 1], r_lin_ch, r_lin_ch * 2, l2)
+    with tf.variable_scope('down_sampling1'):
+        down1_max_p = down_sampling(down1_cv3, [1, 2, 2, 1], [1, 2, 2, 1])
+
+    with tf.variable_scope('down2_cv1'):
+        down2_cv1 = conv2(down1_max_p, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 4, l2)
+    with tf.variable_scope('down2_cv2'):
+        down2_cv2 = conv2(down2_cv1, 1, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 2, l2)
+    with tf.variable_scope('down2_cv3'):
+        down2_cv3 = conv2(down2_cv2, 3, [1, 1, 1, 1], r_lin_ch * 2, r_lin_ch * 4, l2)
+    with tf.variable_scope('down_sampling2'):
+        down2_max_p = down_sampling(down2_cv3, [1, 2, 2, 1], [1, 2, 2, 1])
+
+    with tf.variable_scope('end_cv1'):
+        end_cv1 = conv2(down2_max_p, 3, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4, l2)
+    with tf.variable_scope('end_cv2'):
+        end_cv2 = conv2(end_cv1, 3, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4, l2)
+    with tf.variable_scope('end_cv3'):
+        end_cv3 = conv2(end_cv2, 3, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4, l2)
+    with tf.variable_scope('end_cv4'):
+        end_cv4 = conv2(end_cv3, 3, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4, l2)
+    with tf.variable_scope('result'):
+        result = conv2(end_cv4, 1, [1, 1, 1, 1], r_lin_ch * 4, ch, l2)
     return result
 
 
