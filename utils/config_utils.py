@@ -3,6 +3,10 @@ import collections
 import utils.config as cfg
 
 
+def str_to_bool(string):
+    return True if string.lower() == 'true' else False
+
+
 def get_config(config_path):
     config = os.path.join(config_path, 'config.txt')
     values = collections.OrderedDict()
@@ -18,13 +22,13 @@ def get_config(config_path):
     cfg.IMAGE_SIZE = int(values['IMAGE_SIZE'])
     cfg.CELL_SIZE = int(values['CELL_SIZE'])
     cfg.L2 = False
-    cfg.L2 = bool(values['L2'])
+    cfg.L2 = str_to_bool(values['L2'])
     cfg.L2_FACTOR = float(values['L2_FACTOR'])
-    cfg.BOX_FOCAL_LOSS = bool(values['BOX_FOCAL_LOSS'])
+    cfg.BOX_FOCAL_LOSS = str_to_bool(values['BOX_FOCAL_LOSS'])
     cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     cfg.BOXES_PER_CELL = int(values['BOXES_PER_CELL'])
-    cfg.COORD_SIGMOID = bool(values['COORD_SIGMOID'])
-    cfg.WH_SIGMOID = bool(values['WH_SIGMOID'])
+    cfg.COORD_SIGMOID = str_to_bool(values['COORD_SIGMOID'])
+    cfg.WH_SIGMOID = str_to_bool(values['WH_SIGMOID'])
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
