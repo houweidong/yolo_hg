@@ -43,7 +43,18 @@ def update_config(args):
     if args.log_dir:
         cfg.OUTPUT_DIR_TASK = args.log_dir
 
+    size_dive4 = ["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+                  "tail_conv_deep", "tail_conv_deep_fc"]
+    size_dive8 = ["tail_conv_32"]
+    size_dive16 = ["tail_conv_16"]
+    cfg.IMAGE_SIZE = args.image_size
     cfg.ADD_YOLO_POSITION = args.position
+    if args.position in size_dive4:
+        cfg.CELL_SIZE = args.image_size // 4
+    elif args.position in size_dive8:
+        cfg.CELL_SIZE = args.image_size // 8
+    elif args.position in size_dive16:
+        cfg.CELL_SIZE = args.image_size // 16
     cfg.TRAIN_MODE = args.train_mode
     cfg.RESTORE_MODE = args.restore_mode
     if args.load_weights:
@@ -56,13 +67,11 @@ def update_config(args):
     cfg.NOOBJECT_SCALE = args.noob_f
     cfg.COORD_SCALE = args.coo_f
     cfg.CLASS_SCALE = args.cl_f
-    cfg.CELL_SIZE = args.csize
     cfg.BOX_HOT_MAP = args.bbox_hm
     cfg.BOX_HOT_MAP_LEVEL = args.bbox_hm_level
     # cfg.BOX_HOT_MAP_LEVEL = args.bhmlevel
     cfg.BOX_FOCAL_LOSS = args.focal_loss
     cfg.BOXES_PER_CELL = args.boxes_per_cell
-    cfg.IMAGE_SIZE = args.image_size
     cfg.COORD_SIGMOID = args.coord_sigmoid
     cfg.LEARNING_RATE = args.learning_rate
     cfg.DECAY_RATE = args.learning_rate_decay

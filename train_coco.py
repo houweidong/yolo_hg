@@ -4,7 +4,6 @@ import datetime
 import tensorflow as tf
 from utils import config as cfg
 from utils.config_utils import update_config
-# from model.hourglass_yolo_net import HOURGLASSYOLONet
 from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
 from dataset.coco import Coco
 import tensorflow.contrib.slim as slim
@@ -289,6 +288,9 @@ class Solver(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-md', '--number_models', default=1, type=int)
+    parser.add_argument('-ns', '--number_stacks', default=2, type=int)
+    parser.add_argument('-nf', '--number_feats', default=256, type=int)
     parser.add_argument('-csm', '--coord_sigmoid', action='store_true')
     parser.add_argument('-whsm', '--wh_sigmoid', action='store_true')
     parser.add_argument('-ims', '--image_size', default=256, type=int)
@@ -297,7 +299,7 @@ def main():
     parser.add_argument('-l2f', '--l2_factor', default=0.1, type=float)
     parser.add_argument('-bhm', '--bbox_hm', action='store_true', help='use focal loss')
     parser.add_argument('-bhml', '--bbox_hm_level', default=0, type=int, choices=[i for i in range(9)])
-    parser.add_argument('-cs', '--csize', default=64, type=int)
+    # parser.add_argument('-cs', '--csize', default=64, type=int)
     parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)

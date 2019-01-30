@@ -18,7 +18,7 @@
 #         param1 = nn.Parameter(t.rand(3, 3))
 #         submodel1 = nn.Linear(3, 4)
 #
-#     def forward(self, input):
+#     def forward(input):
 #         x = param1@input@(input.view(1, 3))
 #         x = submodel1(x)
 #         return x
@@ -707,6 +707,132 @@
 #     # train_single()
 #     train()
 
-a = [1 ,2 ,3]
-a.insert(0, 1111)
-print(a)
+# import numpy as np
+# import tensorflow as tf
+# import utils.config as cfg
+# import json
+#
+# annotations_file = '/root/dataset/annotations_trainval2017/annotations/person_keypoints_val2017.json'
+# with tf.gfile.GFile(annotations_file, 'r') as fid:
+#     groundtruth_data = json.load(fid)  # json file
+#     images = groundtruth_data['images']
+#     for image in images:
+#         if image['id'] == 259830:
+#             print(image['file_name'])
+#     ano = groundtruth_data['annotations']
+#     for j, an in enumerate(ano):
+#         a = an['keypoints']
+#         b = an['image_id']
+#         for i in range(17):
+#             if (a[i * 3] == 0 or a[i * 3 + 1] == 0) and a[i * 3 + 2] == 2:
+#                 print(b, a)
+#                 print('youde')
+#     # print('wo')
+# import numpy as np
+# import math
+# import utils.config as cfg
+#
+# cfg.HG_HOT_MAP_DIFF_LEVEL = 1
+# cfg.HG_HOT_MAP_LEVEL = 4
+# image_size = 256
+# nPoints = 1
+# hg_cell_size = 64
+# coco_batch_size = 1
+#
+# diff_list = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
+# hg_hm_diff_factor = diff_list[cfg.HG_HOT_MAP_DIFF_LEVEL]
+# grid_level = np.array([2, 4, 6, 8, 16])
+# hg_factor_list = grid_level / math.sqrt(math.log(10)) / math.pow(math.pow(hg_cell_size / 2, 2),
+#                                                                  hg_hm_diff_factor)
+# hg_hm_factor = hg_factor_list[cfg.HG_HOT_MAP_LEVEL]
+#
+#
+# def gene_hm_kp(kps_resize, area):
+#     hm_kps = np.zeros((nPoints, hg_cell_size, hg_cell_size), dtype=np.float32)
+#     sigma_diff = area ** hg_hm_diff_factor
+#     sigma = sigma_diff * hg_hm_factor
+#     for i in range(nPoints):
+#         kp = kps_resize[i]
+#         if np.array_equal(kp, [0, 0]) or np.array_equal(kp, [image_size / 4, 0]):
+#             continue
+#         else:
+#             col = np.reshape(np.array([np.arange(hg_cell_size)] * hg_cell_size),
+#                              (hg_cell_size, hg_cell_size))
+#             row = np.transpose(np.reshape(np.array([np.arange(hg_cell_size)] * hg_cell_size),
+#                                           (hg_cell_size, hg_cell_size)))
+#             center_col, center_row = kp
+#             hm_kps[i] = np.exp(-1 * (np.square(col - center_col)
+#                                      + np.square(row - center_row)) / sigma ** 2)
+#
+#     return hm_kps
+#
+#
+# def batch_gene_hm_kp(batch_kp, batch_bbox, batch_points_num, batch_id, if_gauss=True):
+#     batch_kp_resize = batch_kp * hg_cell_size / image_size
+#     batch_hm_kp = np.zeros((coco_batch_size, nPoints, hg_cell_size, hg_cell_size),
+#                            dtype=np.float32)
+#     batch_bbox = np.reshape(batch_bbox, (coco_batch_size, -1, 4))
+#     if if_gauss:
+#         for i in range(coco_batch_size):
+#             points_nums = batch_points_num[i]
+#             bbox = batch_bbox[i]
+#             ids = batch_id[i]
+#             for j in range(1):
+#                 points_num = points_nums[j]
+#                 category = ids[j]
+#                 box = bbox[j]
+#                 area = (box[2] - box[0] + 1) * hg_cell_size / image_size * \
+#                        (box[3] - box[1] + 1) * hg_cell_size / image_size
+#                 box = box * hg_cell_size / image_size
+#                 if category == 1 and not points_num:
+#                     no_points_bbox = box
+#                     x1 = math.floor(max(min(no_points_bbox[0], hg_cell_size - 1.0), 0.0))
+#                     y1 = math.floor(max(min(no_points_bbox[1], hg_cell_size - 1.0), 0.0))
+#                     x2 = math.ceil(max(min(no_points_bbox[2], hg_cell_size - 1.0), 0.0))
+#                     y2 = math.ceil(max(min(no_points_bbox[3], hg_cell_size - 1.0), 0.0))
+#                     batch_hm_kp[i, :, y1:y2 + 1, x1:x2 + 1] += -0.001
+#                 elif points_num:
+#                     batch_hm_kp[i] += gene_hm_kp(
+#                         batch_kp_resize[i][j * nPoints:j * nPoints + nPoints], area)
+#                 else:
+#                     continue
+#     else:
+#         # TODO SUPPORT SINGLE POINT FUTURE
+#         print('single point not support now')
+#         pass
+#     return batch_hm_kp
+#
+#
+# batch_kp = np.array([[[64, 64]]])
+# batch_bbox = np.array([[[0, 0, 127, 127]]])
+# batch_points_num = [[1]]
+# batch_id = [[1]]
+# a = batch_gene_hm_kp(batch_kp, batch_bbox, batch_points_num, batch_id)
+# print(a)
+import tensorflow as tf
+import json
+annotations_file = '/root/dataset/annotations_trainval2017/annotations/person_keypoints_train2017.json'
+
+with tf.gfile.GFile(annotations_file, 'r') as fid:
+    groundtruth_data = json.load(fid)  # json file
+    images = groundtruth_data['images']
+
+    ima_wh = {}
+    if 'annotations' in groundtruth_data:
+        print(
+            'Found {:<5} groundtruth annotations. Building annotations index.'
+                .format(len(groundtruth_data['annotations'])))
+        for img in groundtruth_data['images']:
+            ima_wh[img['id']] = [img['height'], img['width']]
+        count_1 = 0
+        count_2 = 0
+        for annotation in groundtruth_data['annotations']:
+            imageid = annotation['image_id']
+            h, w = ima_wh[imageid]
+            for i in range(17):
+                if annotation['keypoints'][i * 3 + 2] == 1:
+                    count_1 += 1
+                if annotation['keypoints'][i * 3 + 2] == 2:
+                    count_2 += 1
+        print(count_1, count_2)
+
