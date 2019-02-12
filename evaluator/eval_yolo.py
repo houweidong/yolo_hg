@@ -8,7 +8,7 @@ with context():
     from evaluator.Eutils.detector import Detector
     import utils.config as cfg
     from utils.logger import Logger
-    from utils.config_utils import get_config
+    from utils.config_utils import get_config,ds_config
     from tqdm import tqdm
     import tensorflow as tf
     import copy
@@ -147,6 +147,7 @@ class EVALUATOR(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-ims', '--image_size', default=512, type=int)
     parser.add_argument('-g','--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
     parser.add_argument('-ds', '--data_source', default='all', type=str, choices=['coco', 'pascal', 'all'])
@@ -175,13 +176,7 @@ def main():
         log.logger.info('Data sc:{}  AP:{}  Weights:{}  {}'.format(
             data.__class__.__name__, ap, args.weights, strings))
     else:
-        data_source = []
-        if args.data_source == 'all':
-            data_source.extend([COCO_VAL(), PASCAL_VAL()])
-        elif args.data_source == 'coco':
-            data_source.append(COCO_VAL())
-        else:
-            data_source.append(PASCAL_VAL())
+        data_source = ds_config(args)
         log = Logger(args.eval_file, level='debug')
         log.logger.info('\n calculate ap from {}\n'.format(args.eval_file))
         model_start = 'hg_yolo'

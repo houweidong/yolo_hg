@@ -14,7 +14,7 @@ class Coco(object):
         self.coco_batch_size = cfg.COCO_BATCH_SIZE * cfg.GPU_NUMBER
         self.image_size = cfg.IMAGE_SIZE
         self.cell_size = cfg.CELL_SIZE
-        self.hg_cell_size = cfg.HG_CELL_SIZE
+        self.hg_cell_size = cfg.IMAGE_SIZE // 4
         self.boxes_per_cell = cfg.BOXES_PER_CELL
         self.classes = cfg.COCO_CLASSES
         self.num_class = len(self.classes)

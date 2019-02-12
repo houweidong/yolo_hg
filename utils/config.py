@@ -2,7 +2,7 @@ import os
 
 # ------------------------------------------------------------
 # path and dataset parameter
-OUTPUT_DIR = 'log_wh_sigmoid_bl_down'
+OUTPUT_DIR = 'log512'
 OUTPUT_DIR_TASK = None
 WEIGHTS_DIR = 'weights'
 WEIGHTS_FILE = None
@@ -18,9 +18,6 @@ COCO_CLASSES = ['person']
 # coco parameter
 COCO_MAX_PERSON_PER_PIC = 13
 COCO_MAX_OBJECT_PER_PIC = 100
-COCO_EXAMPLES = 117266
-COCO_BATCH_SIZE = 20
-COCO_EPOCH_SIZE = COCO_EXAMPLES // COCO_BATCH_SIZE
 # COCO_TRAIN_FILENAME = '/root/dataset/tfrecord_big_person/train/'
 # COCO_VAL_FILENAME = '/root/dataset/tfrecord_big_person/val/'
 COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
@@ -68,7 +65,7 @@ R_OBJECT = 2
 # HM_SIZE = IMAGE_SIZE // 4
 # HM_WIDTH = IMAGE_SIZE // 4
 COCO_NPOINTS = 17
-HG_CELL_SIZE = IMAGE_SIZE // 4
+# HG_CELL_SIZE = IMAGE_SIZE // 4
 NUM_MOUDEL = 1  # hourglass 中residual 模块的数量
 NUM_STACK = 2  # hourglass 堆叠的层数
 NUM_FEATS = 256  # hourglass 中特征图的数量
@@ -79,6 +76,9 @@ NUM_FEATS = 256  # hourglass 中特征图的数量
 # solver parameter
 GPU = '0'
 GPU_NUMBER = 1
+COCO_EXAMPLES = 117266
+COCO_BATCH_SIZE = 10
+COCO_EPOCH_SIZE = COCO_EXAMPLES // (COCO_BATCH_SIZE * GPU_NUMBER)
 LEARNING_RATE = 2.5e-4
 DECAY_STEPS = 10000
 DECAY_RATE = 1

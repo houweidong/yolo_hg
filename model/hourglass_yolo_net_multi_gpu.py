@@ -20,7 +20,7 @@ class HOURGLASSYOLONet(object):
         self.num_class = len(cfg.COCO_CLASSES)
         self.image_size = cfg.IMAGE_SIZE
         self.nPoints = cfg.COCO_NPOINTS
-        self.hg_cell_size = cfg.HG_CELL_SIZE
+        self.hg_cell_size = cfg.IMAGE_SIZE // 4
         self.cell_size = cfg.CELL_SIZE
         self.boxes_per_cell = cfg.BOXES_PER_CELL
         self.ch_size = (self.num_class + self.boxes_per_cell * 5) if self.num_class != 1 \

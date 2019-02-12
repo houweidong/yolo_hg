@@ -1,6 +1,19 @@
 import os
 import collections
 import utils.config as cfg
+from evaluator.Eutils.pascal_val import PASCAL_VAL
+from evaluator.Eutils.coco_val import COCO_VAL
+
+def ds_config(args):
+    data_source = []
+    cfg.IMAGE_SIZE = args.image_size
+    if args.data_source == 'all':
+        data_source.extend([COCO_VAL(), PASCAL_VAL()])
+    elif args.data_source == 'coco':
+        data_source.append(COCO_VAL())
+    else:
+        data_source.append(PASCAL_VAL())
+    return data_source
 
 
 def str_to_bool(string):
@@ -20,7 +33,7 @@ def get_config(config_path):
         name, value = line.split(': ')[0], line.split(': ')[1]
         if name in keys:
             values[name] = value.strip()
-    cfg.ADD_YOLO_POSITION = values['ADD_YOLO_POSITION']
+    cfg.ADD_YOLO_POSITION = "tail_down4" if values['ADD_YOLO_POSITION'] == "tail_conv" else values['ADD_YOLO_POSITION']
     cfg.IMAGE_SIZE = int(values['IMAGE_SIZE'])
     cfg.CELL_SIZE = int(values['CELL_SIZE'])
     cfg.L2 = False
@@ -29,8 +42,8 @@ def get_config(config_path):
     cfg.BOX_FOCAL_LOSS = str_to_bool(values['BOX_FOCAL_LOSS'])
     cfg.BOX_HOT_MAP_LEVEL = int(values['BOX_HOT_MAP_LEVEL'])
     cfg.BOXES_PER_CELL = int(values['BOXES_PER_CELL'])
-    cfg.HG_HOT_MAP_DIFF_LEVEL = int(values['HG_HOT_MAP_DIFF_LEVEL'])
-    cfg.HG_HOT_MAP_LEVEL = int(values['HG_HOT_MAP_LEVEL'])
+    cfg.HG_HOT_MAP_DIFF_LEVEL = int(values['HG_HOT_MAP_DIFF_LEVEL']) if values['HG_HOT_MAP_DIFF_LEVEL'] else 1
+    cfg.HG_HOT_MAP_LEVEL = int(values['HG_HOT_MAP_LEVEL']) if values['HG_HOT_MAP_LEVEL'] else 1
     cfg.COORD_SIGMOID = str_to_bool(values['COORD_SIGMOID'])
     cfg.WH_SIGMOID = str_to_bool(values['WH_SIGMOID'])
     strings = config_path.split('/')[2] + '  '
@@ -47,10 +60,10 @@ def update_config(args):
     if args.log_dir:
         cfg.OUTPUT_DIR_TASK = args.log_dir
 
-    size_dive4 = ["tail", "tail_tsp", "tail_conv", "tail_tsp_self",
+    size_dive4 = ["tail", "tail_tsp", "tail_down4", "tail_tsp_self",
                   "tail_conv_deep", "tail_conv_deep_fc"]
-    size_dive8 = ["tail_conv_32"]
-    size_dive16 = ["tail_conv_16"]
+    size_dive8 = ["tail_down8"]
+    size_dive16 = ["tail_down16", "tail_down16_v2"]
     cfg.IMAGE_SIZE = args.image_size
     cfg.ADD_YOLO_POSITION = args.position
     if args.position in size_dive4:
@@ -83,6 +96,7 @@ def update_config(args):
     cfg.GPU_NUMBER = len(list(filter(None, args.gpu.split(','))))
     cfg.HG_HOT_MAP_DIFF_LEVEL = args.hg_hm_diff_level
     cfg.HG_HOT_MAP_LEVEL = args.hg_hm_level
+    cfg.COCO_BATCH_SIZE = args.batch_size
 
     print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
