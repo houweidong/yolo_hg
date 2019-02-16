@@ -35,6 +35,8 @@ ADD_YOLO_POSITION = "tail_down16_v2"
 # all: train all var in net  sp: train var in TRAINABLE_SCOPES list
 TRAIN_MODE = 'all'
 RESTORE_MODE = 'all'
+YOLO_VERSION = '1'
+NUM_ANCHORS = 7
 IMAGE_SIZE = 256
 CELL_SIZE = 64
 BOXES_PER_CELL = 2
@@ -49,6 +51,7 @@ BOX_HOT_MAP_LEVEL = 0
 # For keypoints
 HG_HOT_MAP_DIFF_LEVEL = 0
 HG_HOT_MAP_LEVEL = 1
+IOU_THRESHOLD_V2 = 0.7
 
 OBJECT_SCALE = 20.0
 NOOBJECT_SCALE = 1.0

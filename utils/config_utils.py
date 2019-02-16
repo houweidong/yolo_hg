@@ -4,6 +4,7 @@ import utils.config as cfg
 from evaluator.Eutils.pascal_val import PASCAL_VAL
 from evaluator.Eutils.coco_val import COCO_VAL
 
+
 def ds_config(args):
     data_source = []
     cfg.IMAGE_SIZE = args.image_size
@@ -23,11 +24,11 @@ def str_to_bool(string):
 def get_config(config_path):
     config = os.path.join(config_path, 'config.txt')
     values = collections.OrderedDict()
-    keys = ['ADD_YOLO_POSITION', 'IMAGE_SIZE', 'CELL_SIZE', 'BOXES_PER_CELL', 'LOSS_FACTOR', 'LEARNING_RATE',
-            'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
+    keys = ['YOLO_VERSION', 'ADD_YOLO_POSITION', 'IMAGE_SIZE', 'CELL_SIZE', 'BOXES_PER_CELL', 'LOSS_FACTOR',
+            'LEARNING_RATE', 'OBJECT_SCALE', 'NOOBJECT_SCALE', 'COORD_SCALE',
             'BOX_FOCAL_LOSS', 'BOX_HOT_MAP_LEVEL',
             'HG_HOT_MAP_DIFF_LEVEL', 'HG_HOT_MAP_LEVEL',
-            'L2', 'L2_FACTOR', 'COORD_SIGMOID', 'WH_SIGMOID']
+            'L2', 'L2_FACTOR', 'COORD_SIGMOID', 'WH_SIGMOID', 'NUM_ANCHORS']
     values = values.fromkeys(keys)
     for line in open(config):
         name, value = line.split(': ')[0], line.split(': ')[1]
@@ -46,6 +47,8 @@ def get_config(config_path):
     cfg.HG_HOT_MAP_LEVEL = int(values['HG_HOT_MAP_LEVEL']) if values['HG_HOT_MAP_LEVEL'] else 1
     cfg.COORD_SIGMOID = str_to_bool(values['COORD_SIGMOID'])
     cfg.WH_SIGMOID = str_to_bool(values['WH_SIGMOID'])
+    cfg.YOLO_VERSION = values['YOLO_VERSION']
+    cfg.NUM_ANCHORS = int(values['NUM_ANCHORS']) if values['NUM_ANCHORS'] else 7
     strings = config_path.split('/')[2] + '  '
     for i, value in values.items():
         strings += '{}:{}  '.format(i, value)
@@ -97,8 +100,10 @@ def update_config(args):
     cfg.HG_HOT_MAP_DIFF_LEVEL = args.hg_hm_diff_level
     cfg.HG_HOT_MAP_LEVEL = args.hg_hm_level
     cfg.COCO_BATCH_SIZE = args.batch_size
+    cfg.YOLO_VERSION = args.yolo_version
+    cfg.NUM_ANCHORS = args.number_anchors
 
-    print("YOLO POSITION: {}".format(cfg.ADD_YOLO_POSITION))
+    print("YOLO POSITION: {}  YOLO_VERSION: {}".format(cfg.ADD_YOLO_POSITION, args.yolo_version))
     print("LOSS_FACTOR:{}  OB_SC: {}  NOOB_SC: {}  "
           "COO_SC: {}  CL_SC: {}  BHP: {}  BHPL: {}  "
           "L2: {}  L2_F: {}  IMAGE_SIZE: {}  COORDSM: {}  WHSM: {}".

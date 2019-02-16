@@ -6,6 +6,8 @@ from model.Mutils import submodules_multi_gpu
 class HOURGLASSYOLONet(object):
 
     def __init__(self, train_eval_visual='train'):
+        self.num_anchors = cfg.NUM_ANCHORS
+        self.yolo_version = cfg.YOLO_VERSION
         self.train_eval_visual = train_eval_visual
         self.l2 = tf.contrib.layers.l2_regularizer(cfg.L2_FACTOR) if cfg.L2 else None
         self.focal_loss = cfg.BOX_FOCAL_LOSS
@@ -23,8 +25,11 @@ class HOURGLASSYOLONet(object):
         self.hg_cell_size = cfg.IMAGE_SIZE // 4
         self.cell_size = cfg.CELL_SIZE
         self.boxes_per_cell = cfg.BOXES_PER_CELL
-        self.ch_size = (self.num_class + self.boxes_per_cell * 5) if self.num_class != 1 \
-            else self.boxes_per_cell * 5
+        if self.yolo_version == '2':
+            self.ch_size = self.num_anchors * 5
+        else:
+            self.ch_size = (self.num_class + self.boxes_per_cell * 5) if self.num_class != 1 \
+                else self.boxes_per_cell * 5
         self.boundary1 = self.num_class if self.num_class != 1 else 0
         self.boundary2 = self.boundary1 + self.boxes_per_cell
 
@@ -282,5 +287,72 @@ class HOURGLASSYOLONet(object):
         loss_list.append(yolo_loss)
         loss_list.append(hg_loss)
         loss_list.append(loss)
+
+        return loss, hg_loss, yolo_loss, loss_list
+
+    def loss_layer_v2(self, predict, labels, scope):
+        hg_logits, predicts = predict
+        labels_det, labels_kp = labels
+        mask_det = slice_tensor(labels_det, 5)
+        labels_det = slice_tensor(labels_det, 0, 4)
+
+        mask_det = tf.cast(tf.reshape(mask_det, shape=(-1, self.cell_size, self.cell_size, self.num_anchors)), tf.bool)
+        with tf.variable_scope('loss_layer'):
+
+            with tf.name_scope('mask'):
+                # label result shape [[x, y, w, h, class], [], ...]
+                masked_label = tf.boolean_mask(labels_det, mask_det)
+                masked_pred = tf.boolean_mask(predicts, mask_det)
+                neg_masked_pred = tf.boolean_mask(predicts, tf.logical_not(mask_det))
+
+            with tf.name_scope('pred'):
+                masked_pred_xy = tf.sigmoid(slice_tensor(masked_pred, 0, 1))
+                masked_pred_wh = tf.exp(slice_tensor(masked_pred, 2, 3))
+                masked_pred_xywh = tf.concat([masked_pred_xy, masked_pred_wh], 1)
+
+                masked_pred_o = tf.sigmoid(slice_tensor(masked_pred, 4))
+                masked_pred_no_o = tf.sigmoid(slice_tensor(neg_masked_pred, 4))
+                # masked_pred_c = tf.nn.softmax(slice_tensor(masked_pred, 5, -1))
+
+            with tf.name_scope('lab'):
+                masked_label_xy = slice_tensor(masked_label, 0, 1)
+                masked_label_wh = slice_tensor(masked_label, 2, 3)
+                masked_label_xywh = slice_tensor(masked_label, 0, 3)
+                # masked_label_c = slice_tensor(masked_label, 4)
+                # masked_label_c_vec = tf.reshape(tf.one_hot(tf.cast(masked_label_c, tf.int32), depth=N_CLASSES),
+                #                                 shape=(-1, N_CLASSES))
+
+            with tf.name_scope('merge'):
+                with tf.name_scope('loss_xy'):
+                    loss_xy = tf.reduce_sum(tf.square(masked_pred_xy - masked_label_xy)) * self.coord_scale
+                with tf.name_scope('loss_wh'):
+                    loss_wh = tf.reduce_sum(tf.square(masked_pred_wh - masked_label_wh)) * self.coord_scale
+                with tf.name_scope('loss_obj'):
+                    ious = self.calc_iou(masked_pred_xywh, masked_label_xywh)
+                    # loss_obj = tf.reduce_sum(tf.square(masked_pred_o - 1)) * self.object_scale
+                    loss_obj = tf.reduce_sum(tf.square(masked_pred_o - ious)) * self.object_scale
+                with tf.name_scope('loss_no_obj'):
+                    loss_no_obj = tf.reduce_sum(tf.square(masked_pred_no_o)) * self.noobject_scale
+                # with tf.name_scope('loss_class'):
+                #     loss_c = tf.reduce_sum(tf.square(masked_pred_c - masked_label_c_vec))
+
+            yolo_loss = loss_xy + loss_wh + loss_obj + loss_no_obj
+            tf.add_to_collection('losses', yolo_loss)
+
+            area_mask = tf.cast(tf.greater_equal(labels_kp, 0.0), tf.float32)
+            diff1 = tf.subtract(hg_logits, labels_kp) * area_mask
+            hg_loss = tf.reduce_mean(tf.nn.l2_loss(diff1, name='l2loss')) * self.loss_factor
+            tf.add_to_collection('losses', hg_loss)
+
+            loss = tf.add_n(tf.get_collection('losses', scope))
+
+        # summary for train and val
+        loss_list = [loss_obj, loss_no_obj, loss_xy + loss_wh, yolo_loss, hg_loss, loss]
+        # loss_list.append(loss_obj)
+        # loss_list.append(loss_no_obj)
+        # loss_list.append(loss_xy + loss_wh)
+        # loss_list.append(yolo_loss)
+        # loss_list.append(hg_loss)
+        # loss_list.append(loss)
 
         return loss, hg_loss, yolo_loss, loss_list

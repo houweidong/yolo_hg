@@ -4,7 +4,7 @@ with context():
     import numpy as np
     from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
     from evaluator.Eutils.pascal_val import PASCAL_VAL
-    from evaluator.Eutils.coco_val import COCO_VAL
+    # from evaluator.Eutils.coco_val import COCO_VAL
     from evaluator.Eutils.detector import Detector
     import utils.config as cfg
     from utils.logger import Logger

@@ -25,6 +25,9 @@ class Logger(object):
         self.logger.addHandler(sh)  # 把对象加到logger里
         self.logger.addHandler(fh)
 
+    @staticmethod
+    def get_logger(filename):
+        return logging.getLogger(filename)
 # if __name__ == '__main__':
 #     log = Logger('ap_results.log', level='debug')
 #     log.logger.debug('debug')

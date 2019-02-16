@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from evaluator.Eutils.nms import py_cpu_nms
-import utils.config as cfg
+# import utils.config as cfg
+from dataset.Dutils.gene_box_v2 import read_anchors_file
 
 
 class Detector(object):
@@ -11,6 +12,7 @@ class Detector(object):
         self.net = net
         self.hg_logits, self.yolo_logits = self.net.build_network(self.net.images)
         self.weights_file = weight_file
+        self.anchors = read_anchors_file('../../dataset/Dutils/anchor' + str(self.net.num_anchors) + '.txt')
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         # tf.reset_default_graph()
@@ -86,6 +88,66 @@ class Detector(object):
         #     for j in range(self.net.num_class):
         #         probs[:, :, i, j] = np.multiply(
         #             class_probs[:, :, j], scales[:, :, i])
+
+        probs = np.clip(probs, 0, 1)
+        filter_mat_probs = np.array(probs >= 0.0, dtype='bool')
+        filter_mat_boxes = np.nonzero(filter_mat_probs)
+
+        # [[bbox1] [bbox2] ...]
+        boxes_filtered = boxes[filter_mat_boxes[0],
+                               filter_mat_boxes[1], filter_mat_boxes[2]]
+        # [0.7, 0.5, 0.91, ...]
+        probs_filtered = probs[filter_mat_probs]
+        # [2, 3, 0, 20, ...]
+        classes_num_filtered = np.argmax(
+            probs, axis=3)[filter_mat_boxes[0], filter_mat_boxes[1], filter_mat_boxes[2]]
+
+        # [2, 1, 0, ...]
+        argsort = np.array(np.argsort(probs_filtered))[::-1]
+        boxes_filtered = boxes_filtered[argsort]
+        probs_filtered = probs_filtered[argsort]
+        classes_num_filtered = classes_num_filtered[argsort]
+
+        # NMS
+        keep = py_cpu_nms(boxes_filtered)
+        # select bbox should keep
+        boxes_filtered = boxes_filtered[keep]
+        probs_filtered = probs_filtered[keep]
+        classes_num_filtered = classes_num_filtered[keep]
+
+        # select bboxes whose category id are 1(person)
+        mask_p = classes_num_filtered.astype(np.bool) if self.net.num_class != 1 \
+            else [True] * len(classes_num_filtered)
+        boxes_person = boxes_filtered[mask_p]
+        probs_person = probs_filtered[mask_p]
+        return boxes_person, probs_person
+
+    def interpret_output_v2(self, output):
+        """
+
+        :param output: yolo head of yolo_hg net of one picture
+        :return: bboxes[n, 4], prob[n, ], class[n, ]  type: numpy
+        """
+        # probs = np.zeros((self.net.cell_size, self.net.cell_size,
+        #                   self.net.boxes_per_cell, self.net.num_class))
+        probs = (1 / (1 + np.exp(-np.clip(output[:, :, :, 4], -50, 50))))[..., np.newaxis]
+        boxes = output[:, :, :, 0:4]
+        boxes[..., 0:2] = 1 / (1 + np.exp(-np.clip(boxes[..., 0:2], -50, 50)))
+        boxes[..., 2:4] = np.exp(-np.clip(boxes[..., 2:4], -50, 50))
+        offset = np.array(
+            [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.num_anchors)
+        offset = np.transpose(
+            np.reshape(
+                offset,
+                [self.net.num_anchors, self.net.cell_size, self.net.cell_size]),
+            (1, 2, 0))
+
+        boxes[:, :, :, 0] += offset
+        boxes[:, :, :, 1] += np.transpose(offset, (1, 0, 2))
+        boxes[:, :, :, :2] /= float(self.net.cell_size)
+        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors / float(self.net.cell_size)
+
+        boxes *= self.net.image_size
 
         probs = np.clip(probs, 0, 1)
         filter_mat_probs = np.array(probs >= 0.0, dtype='bool')

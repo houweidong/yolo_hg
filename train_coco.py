@@ -291,6 +291,8 @@ def main():
     parser.add_argument('-bs', '--batch_size', default=7, type=int)
     parser.add_argument('-hhmdl', '--hg_hm_diff_level', default=0, type=int)
     parser.add_argument('-hhml', '--hg_hm_level', default=1, type=int)
+    parser.add_argument('-na', '--number_anchors', default=7, type=int, choices=[7, 10, 13])
+    parser.add_argument('-yv', '--yolo_version', default='1', type=str)
     parser.add_argument('-md', '--number_models', default=1, type=int)
     parser.add_argument('-ns', '--number_stacks', default=3, type=int)
     parser.add_argument('-nf', '--number_feats', default=256, type=int)

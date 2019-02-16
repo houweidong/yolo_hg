@@ -3,6 +3,18 @@ import tensorflow.contrib.slim as slim
 from utils import config as cfg
 
 
+def slice_tensor(x, start, end=None):
+    if end < 0:
+        y = x[..., start:]
+
+    else:
+        if end is None:
+            end = start
+        y = x[..., start:end + 1]
+
+    return y
+
+
 def batch_norm(input_images):
     # Batch Normalization批归一化
     # ((x-mean)/var)*gamma+beta
@@ -290,7 +302,7 @@ def tail_down16(r_lin, csize_ch, l2):
 
 
 def tail_down16_v2(r_lin, csize_ch, l2):
-    ch, _ = csize_ch
+    ch, cs = csize_ch
     # _, r_lin_ch = r_lin.get_shape().as_list()[0], r_lin.get_shape().as_list()[3]
     r_lin_ch = 256
     with tf.variable_scope('down1_cv1'):
@@ -321,6 +333,7 @@ def tail_down16_v2(r_lin, csize_ch, l2):
         end_cv4 = conv2(end_cv3, 3, [1, 1, 1, 1], r_lin_ch * 4, r_lin_ch * 4, l2)
     with tf.variable_scope('result'):
         result = conv2(end_cv4, 1, [1, 1, 1, 1], r_lin_ch * 4, ch, l2)
+        result = tf.reshape(result, shape=(-1, cs, cs, cfg.NUM_ANCHORS, 5), name='y')
     return result
 
 

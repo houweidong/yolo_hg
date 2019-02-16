@@ -2,6 +2,7 @@ import numpy as np
 import utils.config as cfg
 from dataset.Dutils import read_coco_tf
 import math
+from dataset.Dutils.gene_box_v2 import *
 
 
 class Coco(object):
@@ -11,6 +12,9 @@ class Coco(object):
 
     def __init__(self):
         self.sess = None
+        self.yolo_version = cfg.YOLO_VERSION
+        self.num_anchors = cfg.NUM_ANCHORS
+        self.anchors = read_anchors_file('./Dutils/anchor' + str(self.num_anchors) + '.txt')
         self.coco_batch_size = cfg.COCO_BATCH_SIZE * cfg.GPU_NUMBER
         self.image_size = cfg.IMAGE_SIZE
         self.cell_size = cfg.CELL_SIZE
@@ -61,7 +65,10 @@ class Coco(object):
                                                               self.val_labels_kp_batch,
                                                               self.val_num_points])
         images = self.image_normalization(example)  # 归一化图像
-        labels_det = self.batch_gene_hm_bbox(l_det, l_cg)
+        if self.yolo_version == '1':
+            labels_det = self.batch_gene_hm_bbox(l_det, l_cg)
+        else:
+            labels_det = self.batch_gene_box_v2(l_det, l_cg)
         labels_kp = self.batch_gene_hm_kp(l_kp, l_det, l_np, l_cg)  # heatmap label
 
         return images, labels_det, labels_kp
@@ -124,6 +131,38 @@ class Coco(object):
                 # multi classification
                 if self.num_class != 1:
                     label[y_ind, x_ind, 5 + cg] = 1
+            labels[i, :, :, :] = label
+
+        return labels
+
+    def batch_gene_box_v2(self, batch_det, batch_cg):
+        # TODO  not support multi class, just support person, the num_class always is 1
+        labels = np.zeros(
+            [self.coco_batch_size, self.cell_size, self.cell_size, self.num_anchors, 5], dtype=np.float32)
+
+        for i in range(self.coco_batch_size):
+            l_det, l_cg = batch_det[i], batch_cg[i]
+            l_det = np.reshape(l_det, (-1, 4))
+            label = np.zeros([self.cell_size, self.cell_size, self.num_anchors, 5], dtype=np.float32)
+            for obj, cg in zip(l_det, l_cg):
+                if np.array_equal(obj, [256, 0, 256, 0]) or np.array_equal(obj, [0, 0, 0, 0]):
+                    continue
+                if cg != 1:
+                    continue
+                x1 = max(min(obj[0], self.image_size), 0)
+                y1 = max(min(obj[1], self.image_size), 0)
+                x2 = max(min(obj[2], self.image_size), 0)
+                y2 = max(min(obj[3], self.image_size), 0)
+                roi = [(x2 + x1) / 2.0, (y2 + y1) / 2.0, x2 - x1, y2 - y1]
+                # roi = [x1, y1, x2 - x1, y2 - y1]
+                active_indxs = get_active_anchors(roi, self.anchors)
+                grid_x, grid_y = get_grid_cell(roi, self.image_size, self.image_size, self.cell_size, self.cell_size)
+
+                for active_indx in active_indxs:
+                    anchor_label = roi2label(roi, self.anchors[active_indx],
+                                             self.image_size, self.image_size,
+                                             self.cell_size, self.cell_size)
+                    label[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [1.0]))
             labels[i, :, :, :] = label
 
         return labels

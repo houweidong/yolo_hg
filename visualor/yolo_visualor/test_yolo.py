@@ -10,6 +10,7 @@ with context():
     from utils.config_utils import get_config
     from model.hourglass_yolo_net_multi_gpu import HOURGLASSYOLONet
     from utils.timer import Timer
+    from dataset.Dutils.gene_box_v2 import read_anchors_file
 
 
 class Detector(object):
@@ -29,7 +30,8 @@ class Detector(object):
                                      [1, 2], [0, 1], [0, 2], [1, 3],
                                      [2, 4], [3, 5], [4, 6]])
         self.iou_threshold = cfg.IOU_THRESHOLD_NMS
-
+        self.num_anchors = cfg.NUM_ANCHORS
+        self.anchors = read_anchors_file('../../dataset/Dutils/anchor' + str(self.num_anchors) + '.txt')
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
@@ -91,7 +93,10 @@ class Detector(object):
         yolo_results = []
         hg_results = []
         for i in range(yolo_output.shape[0]):
-            yolo_results.append(self.interpret_output_yolo(yolo_output[i]))
+            if self.net.yolo_version == '1':
+                yolo_results.append(self.interpret_output_yolo(yolo_output[i]))
+            else:
+                yolo_results.append(self.interpret_output_yolo_v2(yolo_output[i]))
             hg_results.append(self.interpret_output_hg(yolo_results[i], hg_output[i]))
         return yolo_results, hg_results
 
@@ -155,6 +160,76 @@ class Detector(object):
             for j in range(self.net.num_class):
                 probs[:, :, i, j] = np.multiply(
                     class_probs[:, :, j], scales[:, :, i])
+
+        filter_mat_probs = np.array(probs >= self.threshold, dtype='bool')
+        filter_mat_boxes = np.nonzero(filter_mat_probs)
+
+        # [[bbox1] [bbox2] ...]
+        boxes_filtered = boxes[filter_mat_boxes[0],
+                               filter_mat_boxes[1], filter_mat_boxes[2]]
+        # [0.7, 0.5, 0.91, ...]
+        probs_filtered = probs[filter_mat_probs]
+        # [2, 3, 0, 20, ...]
+        classes_num_filtered = np.argmax(
+            probs, axis=3)[
+            filter_mat_boxes[0], filter_mat_boxes[1], filter_mat_boxes[2]]
+
+        # [2, 1, 0, ...]
+        argsort = np.array(np.argsort(probs_filtered))[::-1]
+        boxes_filtered = boxes_filtered[argsort]
+        probs_filtered = probs_filtered[argsort]
+        classes_num_filtered = classes_num_filtered[argsort]
+
+        # NMS
+        for i in range(len(boxes_filtered)):
+            if probs_filtered[i] == 0:
+                continue
+            for j in range(i + 1, len(boxes_filtered)):
+                if self.iou(boxes_filtered[i], boxes_filtered[j]) > self.iou_threshold:
+                    probs_filtered[j] = 0.0
+
+        # select bbox whose probs is not 0
+        filter_iou = np.array(probs_filtered > 0.0, dtype='bool')
+        boxes_filtered = boxes_filtered[filter_iou]
+        probs_filtered = probs_filtered[filter_iou]
+        classes_num_filtered = classes_num_filtered[filter_iou]
+
+        result = []
+        for i in range(len(boxes_filtered)):
+            result.append(
+                [cfg.COCO_CLASSES[classes_num_filtered[i]],
+                 boxes_filtered[i][0],
+                 boxes_filtered[i][1],
+                 boxes_filtered[i][2],
+                 boxes_filtered[i][3],
+                 probs_filtered[i]])
+
+        return result
+
+    def interpret_output_yolo_v2(self, output):
+        # probs = np.zeros((self.net.cell_size, self.net.cell_size,
+        #                   self.net.num_anchors, self.net.num_class))
+        probs = (1 / (1 + np.exp(-np.clip(output[:, :, :, 4], -50, 50))))[..., np.newaxis]
+        # boxes = np.reshape(
+        #     output[:, :, :, 0:4],
+        #     (self.net.cell_size, self.net.cell_size, self.net.boxes_per_cell, 4))
+        boxes = output[:, :, :, 0:4]
+        boxes[..., 0:2] = 1 / (1 + np.exp(-np.clip(boxes[..., 0:2], -50, 50)))
+        boxes[..., 2:4] = np.exp(-np.clip(boxes[..., 2:4], -50, 50))
+        offset = np.array(
+            [np.arange(self.net.cell_size)] * self.net.cell_size * self.net.num_anchors)
+        offset = np.transpose(
+            np.reshape(
+                offset,
+                [self.net.num_anchors, self.net.cell_size, self.net.cell_size]),
+            (1, 2, 0))
+
+        boxes[:, :, :, 0] += offset
+        boxes[:, :, :, 1] += np.transpose(offset, (1, 0, 2))
+        boxes[:, :, :, :2] /= float(self.net.cell_size)
+        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors / float(self.net.cell_size)
+
+        boxes *= self.net.image_size
 
         filter_mat_probs = np.array(probs >= self.threshold, dtype='bool')
         filter_mat_boxes = np.nonzero(filter_mat_probs)
@@ -274,7 +349,7 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-160000", type=str)
+    parser.add_argument('--weights', default="hg_yolo-170000", type=str)
     parser.add_argument('--weight_dir', default='../../log_bhm/0.8_0.08_0.03_conv_l2_0.005_bhm5_whsm/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
@@ -307,3 +382,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    # print(read_anchors_file('../../dataset/Dutils/anchor' + str(7) + '.txt').shape)
