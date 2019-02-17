@@ -237,7 +237,7 @@ else:
     lb_pt = '/root/dataset/data/pascal_voc/VOCdevkit/VOC2012/Annotations'
 # n_ac = 9
 loss_cvg = 1e-6
-gs = 32
+gs = 1
 it_num = 1000
 pl = 1
 

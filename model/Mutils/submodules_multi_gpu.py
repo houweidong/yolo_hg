@@ -4,12 +4,12 @@ from utils import config as cfg
 
 
 def slice_tensor(x, start, end=None):
+    if end is None:
+        end = start
+
     if end < 0:
         y = x[..., start:]
-
     else:
-        if end is None:
-            end = start
         y = x[..., start:end + 1]
 
     return y

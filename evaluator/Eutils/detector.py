@@ -145,7 +145,7 @@ class Detector(object):
         boxes[:, :, :, 0] += offset
         boxes[:, :, :, 1] += np.transpose(offset, (1, 0, 2))
         boxes[:, :, :, :2] /= float(self.net.cell_size)
-        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors / float(self.net.cell_size)
+        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors
 
         boxes *= self.net.image_size
 

@@ -14,7 +14,7 @@ class Coco(object):
         self.sess = None
         self.yolo_version = cfg.YOLO_VERSION
         self.num_anchors = cfg.NUM_ANCHORS
-        self.anchors = read_anchors_file('./Dutils/anchor' + str(self.num_anchors) + '.txt')
+        self.anchors = read_anchors_file('./dataset/Dutils/anchor' + str(self.num_anchors) + '.txt')
         self.coco_batch_size = cfg.COCO_BATCH_SIZE * cfg.GPU_NUMBER
         self.image_size = cfg.IMAGE_SIZE
         self.cell_size = cfg.CELL_SIZE
@@ -273,8 +273,9 @@ class Coco(object):
 #             print(i)
 #             # print(r_category_id)
 #             hm_result = coco.batch_gene_hm_kp(r_label, r_bbox, r_num_kpoints, r_category_id)
-#             det_result = coco.batch_gene_hm_bbox(r_bbox, r_category_id)
-#             det_result = np.transpose(det_result, [0, 3, 1, 2])[0][0]
+#             det_result = coco.batch_gene_box_v2(r_bbox, r_category_id)
+#             # det_result = np.transpose(det_result, [0, 3, 1, 2])[0][0]
+#             det_result = det_result[0]
 #
 #             for j in range(batch_size):
 #                 or_x = r_label[j][:, 0] * 64 / 256
@@ -287,7 +288,8 @@ class Coco(object):
 #
 #                 img = Image.fromarray(r_image[j])
 #                 plt.imshow(img, cmap='Greys_r')
-#                 plt.matshow(det_result)
+#                 for iii in range(7):
+#                     plt.matshow(det_result[:, :, iii, 4])
 #                 # plt.matshow(np.sum(hm_result[j], axis=0))
 #                 plt.matshow((hm_result[j][0]))
 #

@@ -93,10 +93,10 @@ class Detector(object):
         yolo_results = []
         hg_results = []
         for i in range(yolo_output.shape[0]):
-            if self.net.yolo_version == '1':
-                yolo_results.append(self.interpret_output_yolo(yolo_output[i]))
-            else:
+            if self.net.yolo_version == '2':
                 yolo_results.append(self.interpret_output_yolo_v2(yolo_output[i]))
+            else:
+                yolo_results.append(self.interpret_output_yolo(yolo_output[i]))
             hg_results.append(self.interpret_output_hg(yolo_results[i], hg_output[i]))
         return yolo_results, hg_results
 
@@ -227,7 +227,7 @@ class Detector(object):
         boxes[:, :, :, 0] += offset
         boxes[:, :, :, 1] += np.transpose(offset, (1, 0, 2))
         boxes[:, :, :, :2] /= float(self.net.cell_size)
-        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors / float(self.net.cell_size)
+        boxes[:, :, :, 2:] = boxes[:, :, :, 2:] * self.anchors
 
         boxes *= self.net.image_size
 
@@ -349,8 +349,8 @@ def main():
     #                              "tail_conv_deep", "tail_conv_deep_fc"])
     # parser.add_argument('--csize', default=64, type=int)
     # parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
-    parser.add_argument('--weights', default="hg_yolo-170000", type=str)
-    parser.add_argument('--weight_dir', default='../../log_bhm/0.8_0.08_0.03_conv_l2_0.005_bhm5_whsm/', type=str)
+    parser.add_argument('--weights', default="hg_yolo-110000", type=str)
+    parser.add_argument('--weight_dir', default='../../log512/512stc4md2_bboxwhsm32hm1_hghm3/', type=str)
     # parser.add_argument('--data_dir', default="data", type=str)
     parser.add_argument('--gpu', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')

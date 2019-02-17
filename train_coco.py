@@ -57,11 +57,16 @@ class Solver(object):
         # self.images = self.net.images
 
     def define_holder_det_kp(self):
-
-        labels_det = tf.placeholder(
-            tf.float32,
-            [self.net.batch_size * self.gpu_number, self.net.cell_size, self.net.cell_size,
-             self.net.num_class + 5 if self.net.num_class != 1 else 5])
+        if self.net.yolo_version == '1':
+            labels_det = tf.placeholder(
+                tf.float32,
+                [self.net.batch_size * self.gpu_number, self.net.cell_size, self.net.cell_size,
+                 self.net.num_class + 5 if self.net.num_class != 1 else 5])
+        else:
+            labels_det = tf.placeholder(
+                tf.float32,
+                [self.net.batch_size * self.gpu_number, self.net.cell_size, self.net.cell_size,
+                 self.net.num_anchors, 5])
         labels_kp = tf.placeholder(
             tf.float32,
             [self.net.batch_size * self.gpu_number, self.net.nPoints, self.net.hg_cell_size,
@@ -91,9 +96,14 @@ class Solver(object):
                             y_kp = labels_kp_hd[i * self.net.batch_size:(i + 1) * self.net.batch_size]
                             hg_logits, yolo_logits = self.net.build_network(x)
                             tf.get_variable_scope().reuse_variables()
-                            loss, hg_loss, yolo_loss, loss_board = \
-                                self.net.loss_layer([hg_logits, yolo_logits],
-                                                    [y_det, y_kp], scope)
+                            if self.net.yolo_version == '1':
+                                loss, hg_loss, yolo_loss, loss_board = \
+                                    self.net.loss_layer([hg_logits, yolo_logits],
+                                                        [y_det, y_kp], scope)
+                            else:
+                                loss, hg_loss, yolo_loss, loss_board = \
+                                    self.net.loss_layer_v2([hg_logits, yolo_logits],
+                                                           [y_det, y_kp], scope)
                             tower_loss.append((loss, hg_loss, yolo_loss))
                             tower_loss_board.append(loss_board)
                             grads = opt.compute_gradients(loss)
@@ -298,7 +308,7 @@ def main():
     parser.add_argument('-nf', '--number_feats', default=256, type=int)
     parser.add_argument('-csm', '--coord_sigmoid', action='store_true')
     parser.add_argument('-whsm', '--wh_sigmoid', action='store_true')
-    parser.add_argument('-ims', '--image_size', default=512, type=int)
+    parser.add_argument('-ims', '--image_size', default=256, type=int)
     parser.add_argument('-bpc', '--boxes_per_cell', default=2, type=int)
     parser.add_argument('-l2', '--l2_regularization', action='store_true', help='use l2 regularization')
     parser.add_argument('-l2f', '--l2_factor', default=5e-3, type=float)
@@ -308,7 +318,7 @@ def main():
     parser.add_argument('-fc', '--focal_loss', action='store_true', help='use focal loss')
     parser.add_argument('-lw', '--load_weights', action='store_true', help='load weighs from wights dir')
     parser.add_argument('--weights', default="YOLO_small.ckpt", type=str)
-    parser.add_argument('--position', default="tail_down16", type=str,
+    parser.add_argument('--position', default="tail_down16_v2", type=str,
                         choices=["tail", "tail_tsp", "tail_down4", "tail_tsp_self", "tail_down16_v2",
                                  "tail_conv_deep", "tail_conv_deep_fc", "tail_down8", "tail_down16"])
     parser.add_argument('--train_mode', default="all", type=str, choices=["all", "scope"])
@@ -316,12 +326,12 @@ def main():
     parser.add_argument('--log_dir', type=str)
     parser.add_argument('--gpu', default='0', type=str)
     parser.add_argument('-c', '--cpu', action='store_true', help='use cpu')
-    parser.add_argument('--factor', default=0.3, type=float)
-    parser.add_argument('--ob_f', default=6.0, type=float)
-    parser.add_argument('--noob_f', default=0.6, type=float)
-    parser.add_argument('--coo_f', default=2.0, type=float)
+    parser.add_argument('--factor', default=0.2, type=float)
+    parser.add_argument('--ob_f', default=1.0, type=float)
+    parser.add_argument('--noob_f', default=0.5, type=float)
+    parser.add_argument('--coo_f', default=5.0, type=float)
     parser.add_argument('--cl_f', default=40.0, type=float)
-    parser.add_argument('-lr', '--learning_rate', default=2.5e-4, type=float)
+    parser.add_argument('-lr', '--learning_rate', default=1.0e-5, type=float)
     parser.add_argument('-lrd', '--learning_rate_decay', default=1, type=float)
     args = parser.parse_args()
 

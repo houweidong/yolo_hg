@@ -18,8 +18,8 @@ COCO_CLASSES = ['person']
 # coco parameter
 COCO_MAX_PERSON_PER_PIC = 13
 COCO_MAX_OBJECT_PER_PIC = 100
-# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord_big_person/train/'
-# COCO_VAL_FILENAME = '/root/dataset/tfrecord_big_person/val/'
+# COCO_TRAIN_FILENAME = '/root/dataset/tfrecord1/train/'
+# COCO_VAL_FILENAME = '/root/dataset/tfrecord1/val/'
 COCO_TRAIN_FILENAME = '/home/new/dataset/tfrecord1/train/'
 COCO_VAL_FILENAME = '/home/new/dataset/tfrecord1/val/'
 # ------------------------------------------------------------
@@ -95,17 +95,17 @@ SAVE_ITER = 10000
 # ------------------------------------------------------------
 # test parameter
 
-THRESHOLD = 0.8
+THRESHOLD = 0.7
 IOU_THRESHOLD_NMS = 0.2
-HG_THRESHOLD = 0.2
+HG_THRESHOLD = 0.4
 HG_FACTOR_HEIGHT = 1.3
-HG_FACTOR_WIDTH = 0.8
+HG_FACTOR_WIDTH = 1.3
 
 IOU_THRESHOLD_GT = 0.5
-# COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
-# COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
-COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
-COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
+COCO_ANNOTATION_FILE = '/root/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+COCO_VAL_IMAGE_FILE = '/root/dataset/val2017/'
+# COCO_ANNOTATION_FILE = '/home/new/dataset/annotations_trainval2017/annotations/instances_val2017.json'
+# COCO_VAL_IMAGE_FILE = '/home/new/dataset/val2017/'
 
 # PASCAL_PATH = '/root/dataset/data/pascal_voc/'
 PASCAL_PATH = '/home/new/dataset/data/pascal_voc/'

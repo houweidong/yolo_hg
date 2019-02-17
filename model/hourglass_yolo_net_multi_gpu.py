@@ -293,8 +293,8 @@ class HOURGLASSYOLONet(object):
     def loss_layer_v2(self, predict, labels, scope):
         hg_logits, predicts = predict
         labels_det, labels_kp = labels
-        mask_det = slice_tensor(labels_det, 5)
-        labels_det = slice_tensor(labels_det, 0, 4)
+        mask_det = slice_tensor(labels_det, 4)
+        labels_det = slice_tensor(labels_det, 0, 3)
 
         mask_det = tf.cast(tf.reshape(mask_det, shape=(-1, self.cell_size, self.cell_size, self.num_anchors)), tf.bool)
         with tf.variable_scope('loss_layer'):
